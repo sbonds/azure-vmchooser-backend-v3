@@ -13,10 +13,11 @@ using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Attributes;
 using Newtonsoft.Json;
 using System.Text;
-using System.Web.Http.Description;
 using System.ComponentModel.DataAnnotations;
 using Microsoft.ApplicationInsights;
 using Microsoft.ApplicationInsights.Extensibility;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
 
 namespace vmchooser
 {
@@ -274,9 +275,8 @@ namespace vmchooser
     public static class GetVmSize
     {
         [FunctionName("GetVmSize")]
-        [ResponseType(typeof(VmSize))]
         [Display(Name = "GetVmSize", Description = "Find the best VM T-Shirt Size for your given specifications")]
-        public static async Task<HttpResponseMessage> Run([HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", "options", Route = null)]HttpRequestMessage req, TraceWriter log)
+        public static async Task<HttpResponseMessage> Run([HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", "options", Route = null)]HttpRequest req, ILogger log)
         {
             // CosmosDB Parameters, retrieved via environment variables
             string databaseName = Environment.GetEnvironmentVariable("cosmosdbDatabaseName");
@@ -291,162 +291,160 @@ namespace vmchooser
             var database = client.GetDatabase(databaseName);
             var collection = database.GetCollection<BsonDocument>(collectionName);
 
-            // Get Parameters
-            dynamic contentdata = await req.Content.ReadAsAsync<object>();
             // Cores (Min) #
             decimal cores = Convert.ToDecimal(GetParameter("cores", "0", req));
             cores = SetMinimum(cores, 0);
-            log.Info("Cores : "+cores.ToString());
+            log.LogInformation("Cores : "+cores.ToString());
             // Physical Cores (Min) #
             decimal pcores = Convert.ToDecimal(GetParameter("pcores", "0", req));
             pcores = SetMinimum(pcores, -127);
-            log.Info("PCores : " + pcores.ToString());
+            log.LogInformation("PCores : " + pcores.ToString());
             // Azure Compute Unit (Min) #
             decimal acu = Convert.ToDecimal(GetParameter("acu", "-127", req));
             acu = SetMinimum(acu, -127);
-            log.Info("ACU : " + acu.ToString());
+            log.LogInformation("ACU : " + acu.ToString());
             // DataBricks DBU (Min) #
             decimal dbu = Convert.ToDecimal(GetParameter("dbu", "-127", req));
             dbu = SetMinimum(dbu, -127);
-            log.Info("DBU : " + dbu.ToString());
+            log.LogInformation("DBU : " + dbu.ToString());
             // Memory (Min) #
             decimal memory = Convert.ToDecimal(GetParameter("memory", "0", req));
             memory = SetMinimum(memory, 0);
-            log.Info("Memory : " + memory.ToString());
+            log.LogInformation("Memory : " + memory.ToString());
             // NICS (Min) #
             decimal nics = Convert.ToDecimal(GetParameter("nics", "-127", req));
             nics = SetMinimum(nics, -127);
-            log.Info("NICs : " + nics.ToString());
+            log.LogInformation("NICs : " + nics.ToString());
             // IOPS (Min) #
             decimal iops = Convert.ToDecimal(GetParameter("iops", "-127", req));
             iops = SetMinimum(iops, -127);
-            log.Info("IOPS : " + iops.ToString());
+            log.LogInformation("IOPS : " + iops.ToString());
             // Throughput (Min) #
             decimal throughput = Convert.ToDecimal(GetParameter("throughput", "-127", req));
             throughput = SetMinimum(throughput, -127);
-            log.Info("Throughput : " + throughput.ToString());
+            log.LogInformation("Throughput : " + throughput.ToString());
             // Data (Disk Capacity) (Min) #
             decimal data = Convert.ToDecimal(GetParameter("data", "-127", req));
             data = SetMinimum(data, -127);
-            log.Info("Data : " + data.ToString());
+            log.LogInformation("Data : " + data.ToString());
             // Temp (Disk Capacity) (Min) #
             decimal temp = Convert.ToDecimal(GetParameter("temp", "-127", req));
             temp = SetMinimum(temp, -127);
-            log.Info("Temp : " + temp.ToString());
+            log.LogInformation("Temp : " + temp.ToString());
             // Hyperthreading
             string ht = GetParameter("ht", "all", req).ToLower();
             string[] htfilter = new string[2];
             htfilter = YesNoAll(ht);
-            log.Info("HyperTreading : " + ht.ToString());
-            log.Info("HyperTreading[0] : " + htfilter[0]);
-            log.Info("HyperTreading[1] : " + htfilter[1]);
+            log.LogInformation("HyperTreading : " + ht.ToString());
+            log.LogInformation("HyperTreading[0] : " + htfilter[0]);
+            log.LogInformation("HyperTreading[1] : " + htfilter[1]);
             // Tier
             string tier = GetParameter("tier", "standard", req).ToLower();
-            log.Info("Tier : " + tier.ToString());
+            log.LogInformation("Tier : " + tier.ToString());
             // SAP HANA
             string saphana = GetParameter("saphana", "all", req).ToLower();
             string[] saphanafilter = new string[2];
             saphanafilter = YesNoAll(saphana);
-            log.Info("SAPHANA : " + saphana.ToString());
-            log.Info("SAPHANA[0] : " + saphanafilter[0]);
-            log.Info("SAPHANA[1] : " + saphanafilter[1]);
+            log.LogInformation("SAPHANA : " + saphana.ToString());
+            log.LogInformation("SAPHANA[0] : " + saphanafilter[0]);
+            log.LogInformation("SAPHANA[1] : " + saphanafilter[1]);
             // SAPS 2T #
             decimal saps2t = Convert.ToDecimal(GetParameter("saps2t", "-127", req));
             if (saps2t <= 0) { saps2t = -127;  }
             saps2t = SetMinimum(saps2t, -127);
-            log.Info("SAPS2T : " + saps2t.ToString());
+            log.LogInformation("SAPS2T : " + saps2t.ToString());
             // SAPS 3T #
             decimal saps3t = Convert.ToDecimal(GetParameter("saps3t", "-127", req));
             if (saps3t <= 0) { saps3t = -127; }
             saps3t = SetMinimum(saps3t, -127);
-            log.Info("SAPS3T : " + saps3t.ToString());
+            log.LogInformation("SAPS3T : " + saps3t.ToString());
             // Ssd
             string ssd = GetParameter("ssd", "all", req).ToLower();
             string[] ssdfilter = new string[2];
             ssdfilter = YesNoAll(ssd);
-            log.Info("SSD : " + ssd.ToString());
-            log.Info("SSD[0] : " + ssdfilter[0]);
-            log.Info("SSD[1] : " + ssdfilter[1]);
+            log.LogInformation("SSD : " + ssd.ToString());
+            log.LogInformation("SSD[0] : " + ssdfilter[0]);
+            log.LogInformation("SSD[1] : " + ssdfilter[1]);
             // Burstable
             string burstable = GetParameter("burstable", "all", req).ToLower();
             string[] burstablefilter = new string[2];
             burstablefilter = YesNoAll(burstable);
-            log.Info("Burstable : " + burstable.ToString());
-            log.Info("Burstable[0] : " + burstablefilter[0]);
-            log.Info("Burstable[1] : " + burstablefilter[1]);
+            log.LogInformation("Burstable : " + burstable.ToString());
+            log.LogInformation("Burstable[0] : " + burstablefilter[0]);
+            log.LogInformation("Burstable[1] : " + burstablefilter[1]);
             // Isolated
             string isolated = GetParameter("isolated", "all", req).ToLower();
             string[] isolatedfilter = new string[2];
             isolatedfilter = YesNoAll(isolated);
-            log.Info("Isolated : " + isolated.ToString());
-            log.Info("Isolated[0] : " + isolatedfilter[0]);
-            log.Info("Isolated[1] : " + isolatedfilter[1]);
+            log.LogInformation("Isolated : " + isolated.ToString());
+            log.LogInformation("Isolated[0] : " + isolatedfilter[0]);
+            log.LogInformation("Isolated[1] : " + isolatedfilter[1]);
             // Constrained
             string constrained = GetParameter("constrained", "all", req).ToLower();
             string[] constrainedfilter = new string[2];
             constrainedfilter = YesNoAll(constrained);
-            log.Info("Constrained : " + constrained.ToString());
-            log.Info("Constrained[0] : " + constrainedfilter[0]);
-            log.Info("Constrained[1] : " + constrainedfilter[1]);
+            log.LogInformation("Constrained : " + constrained.ToString());
+            log.LogInformation("Constrained[0] : " + constrainedfilter[0]);
+            log.LogInformation("Constrained[1] : " + constrainedfilter[1]);
             // Infiniband
             string infiniband = GetParameter("infiniband", "all", req).ToLower();
             string[] infinibandfilter = new string[2];
             infinibandfilter = YesNoAll(infiniband);
-            log.Info("Infiniband : " + infiniband.ToString());
-            log.Info("Infiniband[0] : " + infinibandfilter[0]);
-            log.Info("Infiniband[1] : " + infinibandfilter[1]);
+            log.LogInformation("Infiniband : " + infiniband.ToString());
+            log.LogInformation("Infiniband[0] : " + infinibandfilter[0]);
+            log.LogInformation("Infiniband[1] : " + infinibandfilter[1]);
             // GPU
             string gpu = GetParameter("gpu", "all", req).ToLower();
             string[] gpufilter = new string[2];
             gpufilter = YesNoAll(gpu);
-            log.Info("GPU : " + gpu.ToString());
-            log.Info("GPU[0] : " + gpufilter[0]);
-            log.Info("GPU[1] : " + gpufilter[1]);
+            log.LogInformation("GPU : " + gpu.ToString());
+            log.LogInformation("GPU[0] : " + gpufilter[0]);
+            log.LogInformation("GPU[1] : " + gpufilter[1]);
             // SGX
             string sgx = GetParameter("sgx", "all", req).ToLower();
             string[] sgxfilter = new string[2];
             sgxfilter = YesNoAll(sgx);
-            log.Info("SGX : " + sgx.ToString());
-            log.Info("SGX[0] : " + sgxfilter[0]);
-            log.Info("SGX[1] : " + sgxfilter[1]);
+            log.LogInformation("SGX : " + sgx.ToString());
+            log.LogInformation("SGX[0] : " + sgxfilter[0]);
+            log.LogInformation("SGX[1] : " + sgxfilter[1]);
             // Region
             string region = GetParameter("region", "europe-west", req).ToLower();
-            log.Info("Region : " + region.ToString());
+            log.LogInformation("Region : " + region.ToString());
             // Currency
             string currency = GetParameter("currency", "EUR", req).ToUpper();
-            log.Info("Currency : " + currency.ToString());
+            log.LogInformation("Currency : " + currency.ToString());
             // Contract
             string contract = GetParameter("contract", "payg", req).ToLower();
-            log.Info("Contract : " + contract.ToString());
+            log.LogInformation("Contract : " + contract.ToString());
             // Results (Max) #
             decimal results = Convert.ToDecimal(GetParameter("maxresults", "5", req));
             results = SetMinimum(results, 1);
             results = SetMaximum(results, 100);
-            log.Info("Results : " + results.ToString());
+            log.LogInformation("Results : " + results.ToString());
             // Right Sizing CPU 95pct (Peak Util) %
             decimal avgcpupeak = Convert.ToDecimal(GetParameter("avgcpupeak", "100", req));
             avgcpupeak = SetMinimum(avgcpupeak, 0);
             avgcpupeak = SetMaximum(avgcpupeak, 100);
-            log.Info("AvgCpuPeak : " + avgcpupeak.ToString());
+            log.LogInformation("AvgCpuPeak : " + avgcpupeak.ToString());
             // Right Sizing Memory 95pct (Peak GB) %
             decimal avgmempeak = Convert.ToDecimal(GetParameter("avgmempeak", "100", req));
             avgmempeak = SetMinimum(avgmempeak, 0);
             avgmempeak = SetMaximum(avgmempeak, 100);
-            log.Info("AvgMemPeak : " + avgmempeak.ToString());
+            log.LogInformation("AvgMemPeak : " + avgmempeak.ToString());
             
             // Right Sizing CPU
             cores = cores * avgcpupeak / 100;
             pcores = pcores * avgcpupeak / 100;
-            log.Info("Cores* : " + cores.ToString());
-            log.Info("PCores* : " + pcores.ToString());
+            log.LogInformation("Cores* : " + cores.ToString());
+            log.LogInformation("PCores* : " + pcores.ToString());
 
             // Right Sizing Memory
             memory = memory * avgmempeak / 100;
-            log.Info("Memory* : " + memory.ToString());
+            log.LogInformation("Memory* : " + memory.ToString());
 
             // os
             string os = GetParameter("os", "linux", req).ToLower();
-            log.Info("OS : " + os.ToString());
+            log.LogInformation("OS : " + os.ToString());
 
             var filterBuilder = Builders<BsonDocument>.Filter;
             var filter  = filterBuilder.Eq("type", "vm")
@@ -479,10 +477,6 @@ namespace vmchooser
             var sort = Builders<BsonDocument>.Sort.Ascending("price");
             var cursor = collection.Find<BsonDocument>(filter).Sort(sort).Limit(Convert.ToInt16(results)).ToCursor();
 
-            // Load Application Insights
-            string ApplicationInsightsKey = TelemetryConfiguration.Active.InstrumentationKey = System.Environment.GetEnvironmentVariable("APPINSIGHTS_INSTRUMENTATIONKEY", EnvironmentVariableTarget.Process);
-            TelemetryClient telemetry = new TelemetryClient() { InstrumentationKey = ApplicationInsightsKey };
-
             // Get results and put them into a list of objects
             List<VmSize> documents = new List<VmSize>();
             foreach (var document in cursor.ToEnumerable())
@@ -490,10 +484,10 @@ namespace vmchooser
                 // Get RequestCharge
                 var LastRequestStatistics = database.RunCommand<BsonDocument>(new BsonDocument { { "getLastRequestStatistics", 1 } });
                 double RequestCharge = (double)LastRequestStatistics["RequestCharge"];
-                telemetry.TrackMetric("RequestCharge", RequestCharge);
+                log.LogMetric("RequestCharge", RequestCharge);
 
                 // Get Document
-                log.Info(document.ToString());
+                log.LogInformation(document.ToString());
                 VmSize myVmSize = BsonSerializer.Deserialize<VmSize>(document);
                 myVmSize.setCurrency(currency);
                 documents.Add(myVmSize);
@@ -507,11 +501,9 @@ namespace vmchooser
             };
         }
 
-        static public string GetParameter(string name, string defaultvalue, HttpRequestMessage req)
+        static public string GetParameter(string name, string defaultvalue, HttpRequest req)
         {
-            string value = req.GetQueryNameValuePairs()
-                .FirstOrDefault(q => string.Compare(q.Key, name, true) == 0)
-                .Value;
+            string value = req.Query[name]; ;
             if (String.IsNullOrEmpty(value))
             {
                 value = defaultvalue;

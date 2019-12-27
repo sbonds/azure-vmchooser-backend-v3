@@ -4,19 +4,18 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.Azure.WebJobs.Host;
 using System;
 using MongoDB.Driver;
 using MongoDB.Bson;
-using System.Collections.Generic;
 using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Attributes;
 using Newtonsoft.Json;
 using System.Text;
-using System.Web.Http.Description;
 using System.ComponentModel.DataAnnotations;
 using Microsoft.ApplicationInsights;
 using Microsoft.ApplicationInsights.Extensibility;
+using Microsoft.Extensions.Logging;
+using Microsoft.AspNetCore.Http;
 
 namespace vmchooser
 {
@@ -134,7 +133,7 @@ namespace vmchooser
         }
 
         // Calculate the deployment size
-        public dynamic calculateDeploymentSize(TraceWriter log, decimal cores, decimal memory, decimal storage, decimal overcommit, decimal deduplication, decimal ftt, decimal ftm) {
+        public dynamic calculateDeploymentSize(ILogger log, decimal cores, decimal memory, decimal storage, decimal overcommit, decimal deduplication, decimal ftt, decimal ftm) {
             // Add FTM to storage
             double ftmfactor = 1;
             switch (ftm)
@@ -215,9 +214,8 @@ namespace vmchooser
     public static class GetCloudSimple
     {
         [FunctionName("GetCloudSimple")]
-        [ResponseType(typeof(VmSize))]
         [Display(Name = "GetCloudSimple", Description = "Get the cost for a Azure CloudSimple deployment given a set of specifications")]
-        public static async Task<HttpResponseMessage> Run([HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", "options", Route = null)]HttpRequestMessage req, TraceWriter log)
+        public static async Task<HttpResponseMessage> Run([HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", "options", Route = null)]HttpRequest req, ILogger log)
         {
             // CosmosDB Parameters, retrieved via environment variables
             string databaseName = Environment.GetEnvironmentVariable("cosmosdbDatabaseName");
@@ -229,50 +227,44 @@ namespace vmchooser
             var database = client.GetDatabase(databaseName);
             var collection = database.GetCollection<BsonDocument>(collectionName);
 
-            // Get Parameters
-            dynamic contentdata = await req.Content.ReadAsAsync<object>();
             // Cores
             decimal cores = Convert.ToDecimal(GetParameter("cores", "0", req));
             cores = SetMinimum(cores, 0);
-            log.Info("Cores : " + cores.ToString());
+            log.LogInformation("Cores : " + cores.ToString());
             // Memory
             decimal memory = Convert.ToDecimal(GetParameter("memory", "0", req));
             memory = SetMinimum(memory, 0);
-            log.Info("Memory : " + memory.ToString());
+            log.LogInformation("Memory : " + memory.ToString());
             // Storage
             decimal storage = Convert.ToDecimal(GetParameter("storage", "0", req));
             storage = SetMinimum(storage, 0);
-            log.Info("Storage : " + storage.ToString());
+            log.LogInformation("Storage : " + storage.ToString());
             // Overcommit
             decimal overcommit = Convert.ToDecimal(GetParameter("overcommit", "1", req));
             overcommit = SetMinimum(overcommit, 0);
-            log.Info("Overcommit : " + overcommit.ToString());
+            log.LogInformation("Overcommit : " + overcommit.ToString());
             // Deduplication
             decimal deduplication = Convert.ToDecimal(GetParameter("deduplication", "1", req));
             deduplication = SetMinimum(deduplication, 0);
-            log.Info("Deduplication : " + deduplication.ToString());
+            log.LogInformation("Deduplication : " + deduplication.ToString());
             // FTT - Failures To Tolerate
             decimal ftt = Convert.ToDecimal(GetParameter("ftt", "0" +
                 "", req));
             ftt = SetMinimum(ftt, 0);
-            log.Info("FTT : " + ftt.ToString());
+            log.LogInformation("FTT : " + ftt.ToString());
             // FTM - Fault Tolerance Mode
             decimal ftm = Convert.ToDecimal(GetParameter("ftm", "0", req));
             ftm = SetMinimum(ftm, 0);
-            log.Info("FTM : " + ftm.ToString());
+            log.LogInformation("FTM : " + ftm.ToString());
             // Contract
             string contract = GetParameter("contract", "payg", req).ToLower();
-            log.Info("Contract : " + contract.ToString());
+            log.LogInformation("Contract : " + contract.ToString());
             // Region #
             string region = GetParameter("region", "europe-west", req).ToLower();
-            log.Info("Region : " + region.ToString());
+            log.LogInformation("Region : " + region.ToString());
             // Currency #
             string currency = GetParameter("currency", "EUR", req).ToUpper();
-            log.Info("Currency : " + currency.ToString());
-
-            // Load Application Insights
-            string ApplicationInsightsKey = TelemetryConfiguration.Active.InstrumentationKey = System.Environment.GetEnvironmentVariable("APPINSIGHTS_INSTRUMENTATIONKEY", EnvironmentVariableTarget.Process);
-            TelemetryClient telemetry = new TelemetryClient() { InstrumentationKey = ApplicationInsightsKey };
+            log.LogInformation("Currency : " + currency.ToString());
 
             // Create Return Object
             dynamic documents = new System.Dynamic.ExpandoObject();
@@ -292,10 +284,10 @@ namespace vmchooser
                 // Get RequestCharge
                 var LastRequestStatistics = database.RunCommand<BsonDocument>(new BsonDocument { { "getLastRequestStatistics", 1 } });
                 double RequestCharge = (double)LastRequestStatistics["RequestCharge"];
-                telemetry.TrackMetric("RequestCharge", RequestCharge);
+                log.LogMetric("RequestCharge", RequestCharge);
 
                 // Get Document
-                log.Info(document.ToString());
+                log.LogInformation(document.ToString());
                 CloudSimple myCloudSimple = BsonSerializer.Deserialize<CloudSimple>(document);
                 myCloudSimple.setCurrency(currency);
                 results = myCloudSimple.calculateDeploymentSize(log, cores, memory, storage, overcommit, deduplication, ftt, ftm);
@@ -312,11 +304,9 @@ namespace vmchooser
             };
         }
 
-        static public string GetParameter(string name, string defaultvalue, HttpRequestMessage req)
+        static public string GetParameter(string name, string defaultvalue, HttpRequest req)
         {
-            string value = req.GetQueryNameValuePairs()
-                .FirstOrDefault(q => string.Compare(q.Key, name, true) == 0)
-                .Value;
+            string value = req.Query[name]; ;
             if (String.IsNullOrEmpty(value))
             {
                 value = defaultvalue;
@@ -324,6 +314,7 @@ namespace vmchooser
 
             return value;
         }
+
         static public string[] YesNoAll(string value)
         {
             string[] response = new string[2];

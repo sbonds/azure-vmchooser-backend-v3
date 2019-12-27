@@ -4,7 +4,6 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.Azure.WebJobs.Host;
 using System;
 using MongoDB.Driver;
 using MongoDB.Bson;
@@ -13,10 +12,11 @@ using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Attributes;
 using Newtonsoft.Json;
 using System.Text;
-using System.Web.Http.Description;
 using System.ComponentModel.DataAnnotations;
 using Microsoft.ApplicationInsights;
 using Microsoft.ApplicationInsights.Extensibility;
+using Microsoft.Extensions.Logging;
+using Microsoft.AspNetCore.Http;
 
 namespace vmchooser
 {
@@ -179,7 +179,7 @@ namespace vmchooser
     {
         [FunctionName("GetSqlService")]
         [Display(Name = "GetSqlService", Description = "Find the best SQL Service for your given specifications")]
-        public static async Task<HttpResponseMessage> Run([HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = null)]HttpRequestMessage req, TraceWriter log)
+        public static async Task<HttpResponseMessage> Run([HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = null)]HttpRequest req, ILogger log)
         {
             string databaseName = Environment.GetEnvironmentVariable("cosmosdbDatabaseName");
             string collectionName = Environment.GetEnvironmentVariable("cosmosdbCollectionName");
@@ -190,49 +190,43 @@ namespace vmchooser
             var database = client.GetDatabase(databaseName);
             var collection = database.GetCollection<BsonDocument>(collectionName);
 
-            // Get Parameters
-            dynamic contentdata = await req.Content.ReadAsAsync<object>();
             // Cores (Min) #
             decimal cores = Convert.ToDecimal(GetParameter("cores", "0", req));
             cores = SetMinimum(cores, 0);
-            log.Info("Cores : " + cores.ToString());
+            log.LogInformation("Cores : " + cores.ToString());
             // Memory (Min) #
             decimal memory = Convert.ToDecimal(GetParameter("memory", "0", req));
             memory = SetMinimum(memory, 0);
-            log.Info("Memory : " + memory.ToString());
+            log.LogInformation("Memory : " + memory.ToString());
             // IOPS (Min) #
             decimal iops = Convert.ToDecimal(GetParameter("iops", "-127", req));
             iops = SetMinimum(iops, -127);
-            log.Info("IOPS : " + iops.ToString());
+            log.LogInformation("IOPS : " + iops.ToString());
             // Throughput (Min) #
             decimal throughput = Convert.ToDecimal(GetParameter("throughput", "-127", req));
             throughput = SetMinimum(throughput, -127);
-            log.Info("Throughput : " + throughput.ToString());
+            log.LogInformation("Throughput : " + throughput.ToString());
             // Data (Disk Capacity) (Min) #
             decimal data = Convert.ToDecimal(GetParameter("data", "0", req));
             data = SetMinimum(data, 0);
-            log.Info("Data : " + data.ToString());
+            log.LogInformation("Data : " + data.ToString());
             // Region #
             string region = GetParameter("region", "europe-west", req).ToLower();
-            log.Info("Region : " + region.ToString());
+            log.LogInformation("Region : " + region.ToString());
             // Currency #
             string currency = GetParameter("currency", "EUR", req).ToUpper();
-            log.Info("Currency : " + currency.ToString());
+            log.LogInformation("Currency : " + currency.ToString());
             // Contract #
             string contract = GetParameter("contract", "payg", req).ToLower();
-            log.Info("Contract : " + contract.ToString());
+            log.LogInformation("Contract : " + contract.ToString());
             // AHUB #
             string ahub = GetParameter("ahub", "no", req).ToLower();
-            log.Info("AHUB : " + ahub.ToString());
+            log.LogInformation("AHUB : " + ahub.ToString());
             // Results (Max) #
             decimal results = Convert.ToDecimal(GetParameter("maxresults", "1", req));
             results = SetMinimum(results, 1);
             results = SetMaximum(results, 100);
-            log.Info("Results : " + results.ToString());
-
-            // Load Application Insights
-            string ApplicationInsightsKey = TelemetryConfiguration.Active.InstrumentationKey = System.Environment.GetEnvironmentVariable("APPINSIGHTS_INSTRUMENTATIONKEY", EnvironmentVariableTarget.Process);
-            TelemetryClient telemetry = new TelemetryClient() { InstrumentationKey = ApplicationInsightsKey };
+            log.LogInformation("Results : " + results.ToString());
 
             // Initialize results object
             List<SqlService> documents = new List<SqlService>();
@@ -264,9 +258,9 @@ namespace vmchooser
                     // Get RequestCharge
                     var LastRequestStatistics = database.RunCommand<BsonDocument>(new BsonDocument { { "getLastRequestStatistics", 1 } });
                     double RequestCharge = (double)LastRequestStatistics["RequestCharge"];
-                    telemetry.TrackMetric("RequestCharge", RequestCharge);
+                    log.LogMetric("RequestCharge", RequestCharge);
                     // Get Document
-                    // log.Info(document.ToString());
+                    // log.LogInformation(document.ToString());
                     SqlService mySqlService = BsonSerializer.Deserialize<SqlService>(document);
                     mySqlService.setCurrency(currency);
                     documents.Add(mySqlService);
@@ -283,11 +277,9 @@ namespace vmchooser
             };
         }
 
-        static public string GetParameter(string name, string defaultvalue, HttpRequestMessage req)
+        static public string GetParameter(string name, string defaultvalue, HttpRequest req)
         {
-            string value = req.GetQueryNameValuePairs()
-                .FirstOrDefault(q => string.Compare(q.Key, name, true) == 0)
-                .Value;
+            string value = req.Query[name]; ;
             if (String.IsNullOrEmpty(value))
             {
                 value = defaultvalue;
@@ -295,6 +287,7 @@ namespace vmchooser
 
             return value;
         }
+
         static public string[] YesNoAll(string value)
         {
             string[] response = new string[2];

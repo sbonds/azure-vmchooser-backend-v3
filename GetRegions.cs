@@ -6,20 +6,17 @@ using System.Threading.Tasks;
 using System.Text;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.Azure.WebJobs.Host;
-
 using MongoDB.Driver;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Attributes;
-
 using Newtonsoft.Json;
-
 using Microsoft.ApplicationInsights;
 using Microsoft.ApplicationInsights.Extensibility;
+using Microsoft.Extensions.Logging;
+using Microsoft.AspNetCore.Http;
 
 namespace vmchooser
 {
@@ -38,7 +35,7 @@ namespace vmchooser
     public static class GetRegions
     {
         [FunctionName("GetRegions")]
-        public static async Task<HttpResponseMessage> Run([HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = null)]HttpRequestMessage req, TraceWriter log)
+        public static async Task<HttpResponseMessage> Run([HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = null)]HttpRequest req, ILogger log)
         {
             // CosmosDB Parameters, retrieved via environment variables
             string databaseName = Environment.GetEnvironmentVariable("cosmosdbDatabaseName");
@@ -57,10 +54,6 @@ namespace vmchooser
 
             var cursor = collection.Find<BsonDocument>(filter).ToCursor();
 
-            // Load Application Insights
-            string ApplicationInsightsKey = TelemetryConfiguration.Active.InstrumentationKey = System.Environment.GetEnvironmentVariable("APPINSIGHTS_INSTRUMENTATIONKEY", EnvironmentVariableTarget.Process);
-            TelemetryClient telemetry = new TelemetryClient() { InstrumentationKey = ApplicationInsightsKey };
-
             // Get results and put them into a list of objects
             List<RegionList> documents = new List<RegionList>();
             foreach (var document in cursor.ToEnumerable())
@@ -68,10 +61,10 @@ namespace vmchooser
                 // Get RequestCharge
                 var LastRequestStatistics = database.RunCommand<BsonDocument>(new BsonDocument { { "getLastRequestStatistics", 1 } });
                 double RequestCharge = (double)LastRequestStatistics["RequestCharge"];
-                telemetry.TrackMetric("RequestCharge", RequestCharge);
+                log.LogMetric("RequestCharge", RequestCharge);
 
                 // Get Document
-                log.Info(document.ToString());
+                log.LogInformation(document.ToString());
                 RegionList myRegion = BsonSerializer.Deserialize<RegionList>(document);
                 documents.Add(myRegion);
             }
@@ -85,11 +78,9 @@ namespace vmchooser
 
         }
 
-        static public string GetParameter(string name, string defaultvalue, HttpRequestMessage req)
+        static public string GetParameter(string name, string defaultvalue, HttpRequest req)
         {
-            string value = req.GetQueryNameValuePairs()
-                .FirstOrDefault(q => string.Compare(q.Key, name, true) == 0)
-                .Value;
+            string value = req.Query[name]; ;
             if (String.IsNullOrEmpty(value))
             {
                 value = defaultvalue;

@@ -4,19 +4,18 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.Azure.WebJobs.Host;
 using System;
 using MongoDB.Driver;
 using MongoDB.Bson;
-using System.Collections.Generic;
 using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Attributes;
 using Newtonsoft.Json;
 using System.Text;
-using System.Web.Http.Description;
 using System.ComponentModel.DataAnnotations;
 using Microsoft.ApplicationInsights;
 using Microsoft.ApplicationInsights.Extensibility;
+using Microsoft.Extensions.Logging;
+using Microsoft.AspNetCore.Http;
 
 namespace vmchooser
 {
@@ -300,9 +299,8 @@ namespace vmchooser
     public static class GetBackup
     {
         [FunctionName("GetBackup")]
-        [ResponseType(typeof(VmSize))]
         [Display(Name = "GetBackup", Description = "Get the cost for Azure backup given a set of specifications")]
-        public static async Task<HttpResponseMessage> Run([HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", "options", Route = null)]HttpRequestMessage req, TraceWriter log)
+        public static async Task<HttpResponseMessage> Run([HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", "options", Route = null)]HttpRequest req, ILogger log)
         {
             // CosmosDB Parameters, retrieved via environment variables
             string databaseName = Environment.GetEnvironmentVariable("cosmosdbDatabaseName");
@@ -314,51 +312,45 @@ namespace vmchooser
             var database = client.GetDatabase(databaseName);
             var collection = database.GetCollection<BsonDocument>(collectionName);
 
-            // Get Parameters
-            dynamic contentdata = await req.Content.ReadAsAsync<object>();
             // Backup Size (source)
             decimal size = Convert.ToDecimal(GetParameter("size", "0", req));
             size = SetMinimum(size, 0);
-            log.Info("Backup Size : " + size.ToString());
+            log.LogInformation("Backup Size : " + size.ToString());
             // # of Daily backups
             decimal daily = Convert.ToDecimal(GetParameter("daily", "0", req));
             daily = SetMinimum(daily, 0);
-            log.Info("Daily : " + daily.ToString());
+            log.LogInformation("Daily : " + daily.ToString());
             // # of Weekly backups
             decimal weekly = Convert.ToDecimal(GetParameter("weekly", "0", req));
             weekly = SetMinimum(weekly, 0);
-            log.Info("Weekly : " + weekly.ToString());
+            log.LogInformation("Weekly : " + weekly.ToString());
             // # of Monthly backups
             decimal monthly = Convert.ToDecimal(GetParameter("monthly", "0", req));
             monthly = SetMinimum(monthly, 0);
-            log.Info("Monthly : " + monthly.ToString());
+            log.LogInformation("Monthly : " + monthly.ToString());
             // # of Yearly backups
             decimal yearly = Convert.ToDecimal(GetParameter("yearly", "0", req));
             yearly = SetMinimum(yearly, 0);
-            log.Info("Yearly : " + yearly.ToString());
+            log.LogInformation("Yearly : " + yearly.ToString());
             // Region #
             string region = GetParameter("region", "europe-west", req).ToLower();
-            log.Info("Region : " + region.ToString());
+            log.LogInformation("Region : " + region.ToString());
             // Currency #
             string currency = GetParameter("currency", "EUR", req).ToUpper();
-            log.Info("Currency : " + currency.ToString());
+            log.LogInformation("Currency : " + currency.ToString());
             // Resiliency
             string resiliency = GetParameter("resiliency", "lrs", req).ToLower();
-            log.Info("Resiliency : " + resiliency.ToString());
+            log.LogInformation("Resiliency : " + resiliency.ToString());
             // Churn Rate (%)
             decimal churn = Convert.ToDecimal(GetParameter("churn", "2", req));
             churn = SetMinimum(churn, 0);
             churn = SetMaximum(churn, 100);
-            log.Info("Churn : " + churn.ToString());
+            log.LogInformation("Churn : " + churn.ToString());
             // Compression Gain (%)
             decimal compression = Convert.ToDecimal(GetParameter("compression", "30", req));
             compression = SetMinimum(compression, 0);
             compression = SetMaximum(compression, 100);
-            log.Info("Compression : " + compression.ToString());
-
-            // Load Application Insights
-            string ApplicationInsightsKey = TelemetryConfiguration.Active.InstrumentationKey = System.Environment.GetEnvironmentVariable("APPINSIGHTS_INSTRUMENTATIONKEY", EnvironmentVariableTarget.Process);
-            TelemetryClient telemetry = new TelemetryClient() { InstrumentationKey = ApplicationInsightsKey };
+            log.LogInformation("Compression : " + compression.ToString());
 
             // Create Return Object
             dynamic documents = new System.Dynamic.ExpandoObject();
@@ -376,10 +368,10 @@ namespace vmchooser
                 // Get RequestCharge
                 var LastRequestStatistics = database.RunCommand<BsonDocument>(new BsonDocument { { "getLastRequestStatistics", 1 } });
                 double RequestCharge = (double)LastRequestStatistics["RequestCharge"];
-                telemetry.TrackMetric("RequestCharge", RequestCharge);
+                log.LogMetric("RequestCharge", RequestCharge);
 
                 // Get Document
-                log.Info(document.ToString());
+                log.LogInformation(document.ToString());
                 VmBackupInstance myVmBackupInstance = BsonSerializer.Deserialize<VmBackupInstance>(document);
                 myVmBackupInstance.setCurrency(currency);
                 decimal VmBackupInstanceCost = myVmBackupInstance.calculateBackupInstance(size);
@@ -399,10 +391,10 @@ namespace vmchooser
                 // Get RequestCharge
                 var LastRequestStatistics = database.RunCommand<BsonDocument>(new BsonDocument { { "getLastRequestStatistics", 1 } });
                 double RequestCharge = (double)LastRequestStatistics["RequestCharge"];
-                telemetry.TrackMetric("RequestCharge", RequestCharge);
+                log.LogMetric("RequestCharge", RequestCharge);
 
                 // Get Document
-                log.Info(document.ToString());
+                log.LogInformation(document.ToString());
                 VmBackupStorage myVmBackupStorage = BsonSerializer.Deserialize<VmBackupStorage>(document);
                 myVmBackupStorage.setCurrency(currency);
                 decimal VmBackupStorageSize = myVmBackupStorage.calculateBackupSize(size, daily, weekly, monthly, yearly, churn, compression);
@@ -419,11 +411,9 @@ namespace vmchooser
             };
         }
 
-        static public string GetParameter(string name, string defaultvalue, HttpRequestMessage req)
+        static public string GetParameter(string name, string defaultvalue, HttpRequest req)
         {
-            string value = req.GetQueryNameValuePairs()
-                .FirstOrDefault(q => string.Compare(q.Key, name, true) == 0)
-                .Value;
+            string value = req.Query[name]; ;
             if (String.IsNullOrEmpty(value))
             {
                 value = defaultvalue;
@@ -431,6 +421,7 @@ namespace vmchooser
 
             return value;
         }
+
         static public string[] YesNoAll(string value)
         {
             string[] response = new string[2];

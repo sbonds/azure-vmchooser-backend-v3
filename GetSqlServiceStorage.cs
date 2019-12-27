@@ -4,7 +4,6 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.Azure.WebJobs.Host;
 using System;
 using MongoDB.Driver;
 using MongoDB.Bson;
@@ -13,10 +12,11 @@ using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Attributes;
 using Newtonsoft.Json;
 using System.Text;
-using System.Web.Http.Description;
 using System.ComponentModel.DataAnnotations;
 using Microsoft.ApplicationInsights;
 using Microsoft.ApplicationInsights.Extensibility;
+using Microsoft.Extensions.Logging;
+using Microsoft.AspNetCore.Http;
 
 namespace vmchooser
 {
@@ -150,7 +150,7 @@ namespace vmchooser
         {
             [FunctionName("GetSqlServiceStorage")]
             [Display(Name = "GetSqlServiceStorage", Description = "Find the storage cost of your SQL Service given your specifications")]
-            public static async Task<HttpResponseMessage> Run([HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = null)]HttpRequestMessage req, TraceWriter log)
+            public static async Task<HttpResponseMessage> Run([HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = null)]HttpRequest req, ILogger log)
             {
                 string databaseName = Environment.GetEnvironmentVariable("cosmosdbDatabaseName");
                 string collectionName = Environment.GetEnvironmentVariable("cosmosdbCollectionName");
@@ -160,25 +160,19 @@ namespace vmchooser
                 var client = new MongoClient(mongodbConnectionString);
                 var database = client.GetDatabase(databaseName);
                 var collection = database.GetCollection<BsonDocument>(collectionName);
-
-                // Get Parameters
-                dynamic contentdata = await req.Content.ReadAsAsync<object>();
+;
                 // Region #
                 string region = GetParameter("region", "europe-west", req).ToLower();
-                log.Info("Region : " + region.ToString());
+                log.LogInformation("Region : " + region.ToString());
                 // Currency #
                 string currency = GetParameter("currency", "EUR", req).ToUpper();
-                log.Info("Currency : " + currency.ToString());
+                log.LogInformation("Currency : " + currency.ToString());
                 // Purchase Model
                 string purchasemodel = GetParameter("purchasemodel", "managed", req).ToLower();
-                log.Info("Purchase Model : " + purchasemodel.ToString());
+                log.LogInformation("Purchase Model : " + purchasemodel.ToString());
                 // tier
                 string tier = GetParameter("tier", "general-purpose", req).ToLower();
-                log.Info("Tier : " + tier.ToString());
-
-                // Load Application Insights
-                string ApplicationInsightsKey = TelemetryConfiguration.Active.InstrumentationKey = System.Environment.GetEnvironmentVariable("APPINSIGHTS_INSTRUMENTATIONKEY", EnvironmentVariableTarget.Process);
-                TelemetryClient telemetry = new TelemetryClient() { InstrumentationKey = ApplicationInsightsKey };
+                log.LogInformation("Tier : " + tier.ToString());
 
                 // Initialize results object
                 List<SqlServiceStorage> documents = new List<SqlServiceStorage>();
@@ -198,7 +192,7 @@ namespace vmchooser
                     // Get RequestCharge
                     var LastRequestStatistics = database.RunCommand<BsonDocument>(new BsonDocument { { "getLastRequestStatistics", 1 } });
                     double RequestCharge = (double)LastRequestStatistics["RequestCharge"];
-                    telemetry.TrackMetric("RequestCharge", RequestCharge);
+                    log.LogMetric("RequestCharge", RequestCharge);
                     // Get Document
                     SqlServiceStorage mySqlServiceStorage = BsonSerializer.Deserialize<SqlServiceStorage>(document);
                     mySqlServiceStorage.setCurrency(currency);
@@ -213,11 +207,9 @@ namespace vmchooser
                     Content = new StringContent(json, Encoding.UTF8, "application/json")
                 };
             }
-            static public string GetParameter(string name, string defaultvalue, HttpRequestMessage req)
+            static public string GetParameter(string name, string defaultvalue, HttpRequest req)
             {
-                string value = req.GetQueryNameValuePairs()
-                    .FirstOrDefault(q => string.Compare(q.Key, name, true) == 0)
-                    .Value;
+                string value = req.Query[name]; ;
                 if (String.IsNullOrEmpty(value))
                 {
                     value = defaultvalue;

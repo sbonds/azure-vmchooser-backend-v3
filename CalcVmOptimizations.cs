@@ -7,7 +7,6 @@ using System.Text;
 using System.ComponentModel.DataAnnotations;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.Azure.WebJobs.Host;
 using MongoDB.Driver;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
@@ -15,8 +14,8 @@ using MongoDB.Bson.Serialization.Attributes;
 using Newtonsoft.Json;
 using Microsoft.ApplicationInsights;
 using Microsoft.ApplicationInsights.Extensibility;
-using System.Web.Http.Description;
-using Microsoft.Graph;
+using Microsoft.Extensions.Logging;
+using Microsoft.AspNetCore.Http;
 
 namespace vmchooser
 {
@@ -131,9 +130,8 @@ namespace vmchooser
     public static class CalcVmOptimizations
     {
         [FunctionName("CalcVmOptimizations")]
-        [ResponseType(typeof(VmSize))]
         [Display(Name = "CalcVmOptimizations", Description = "Find the best VM T-Shirt Size for your given specifications")]
-        public static async Task<HttpResponseMessage> Run([HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", "options", Route = null)]HttpRequestMessage req, TraceWriter log)
+        public static async Task<HttpResponseMessage> Run([HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", "options", Route = null)]HttpRequest req, ILogger log)
         {
             // CosmosDB Parameters, retrieved via environment variables
             string databaseName = Environment.GetEnvironmentVariable("cosmosdbDatabaseName");
@@ -148,21 +146,19 @@ namespace vmchooser
             var database = client.GetDatabase(databaseName);
             var collection = database.GetCollection<BsonDocument>(collectionName);
 
-            // Get Parameters
-            dynamic contentdata = await req.Content.ReadAsAsync<object>();
             // Tier #
             string tier = GetParameter("tier", "standard", req).ToLower();
-            log.Info("Tier : " + tier.ToString());
+            log.LogInformation("Tier : " + tier.ToString());
             // Region #
             string region = GetParameter("region", "europe-west", req).ToLower();
-            log.Info("Region : " + region.ToString());
+            log.LogInformation("Region : " + region.ToString());
             // Currency #
             string currency = GetParameter("currency", "EUR", req).ToUpper();
-            log.Info("Currency : " + currency.ToString());
+            log.LogInformation("Currency : " + currency.ToString());
             
             // Name
             string vmsize = GetParameter("vmsize", "a0", req).ToLower();
-            log.Info("Name : " + vmsize.ToString());
+            log.LogInformation("Name : " + vmsize.ToString());
 
             // Get price for Linux
             var filterBuilder = Builders<BsonDocument>.Filter;
@@ -181,22 +177,18 @@ namespace vmchooser
             results.Region = region;
             results.Tier = tier;
 
-            // Load Application Insights
-            string ApplicationInsightsKey = TelemetryConfiguration.Active.InstrumentationKey = System.Environment.GetEnvironmentVariable("APPINSIGHTS_INSTRUMENTATIONKEY", EnvironmentVariableTarget.Process);
-            TelemetryClient telemetry = new TelemetryClient() { InstrumentationKey = ApplicationInsightsKey };
-
             foreach (var document in cursor.ToEnumerable())
             {
                 // Get RequestCharge
                 var LastRequestStatistics = database.RunCommand<BsonDocument>(new BsonDocument { { "getLastRequestStatistics", 1 } });
                 double RequestCharge = (double)LastRequestStatistics["RequestCharge"];
-                telemetry.TrackMetric("RequestCharge", RequestCharge);
+                log.LogMetric("RequestCharge", RequestCharge);
 
                 // Get Document
-                log.Info(document.ToString());
+                log.LogInformation(document.ToString());
                 VmSize myVmSize = BsonSerializer.Deserialize<VmSize>(document);
                 myVmSize.setCurrency(currency);
-                log.Info("Price :" + myVmSize.Price + " - Contract : " + myVmSize.Contract + " - OS : " + myVmSize.OperatingSystem);
+                log.LogInformation("Price :" + myVmSize.Price + " - Contract : " + myVmSize.Contract + " - OS : " + myVmSize.OperatingSystem);
                 results.SetPrice(myVmSize.Price, myVmSize.Contract, myVmSize.OperatingSystem);
             }
             results.SetDifferences();
@@ -209,11 +201,9 @@ namespace vmchooser
             };
         }
 
-        static public string GetParameter(string name, string defaultvalue, HttpRequestMessage req)
+        static public string GetParameter(string name, string defaultvalue, HttpRequest req)
         {
-            string value = req.GetQueryNameValuePairs()
-                .FirstOrDefault(q => string.Compare(q.Key, name, true) == 0)
-                .Value;
+            string value = req.Query[name];;
             if (String.IsNullOrEmpty(value))
             {
                 value = defaultvalue;

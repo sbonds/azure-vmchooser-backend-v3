@@ -4,9 +4,7 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.Azure.WebJobs.Host;
 using System.Text;
-using System.Web.Http.Description;
 using System.ComponentModel.DataAnnotations;
 using System;
 using MongoDB.Driver;
@@ -14,10 +12,11 @@ using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using Newtonsoft.Json;
 using MongoDB.Bson.Serialization;
-using System.Collections.Generic;
 
 using Microsoft.ApplicationInsights;
 using Microsoft.ApplicationInsights.Extensibility;
+using Microsoft.Extensions.Logging;
+using Microsoft.AspNetCore.Http;
 
 namespace vmchooser
 {
@@ -63,7 +62,7 @@ namespace vmchooser
         public decimal DiskPrice { get; set; }
 
         // Set the Price & Currency on a requested currency name
-        public void Calculate(DiskSize myDiskSize, decimal maxdisks, decimal mincapacity, decimal miniops, decimal minthroughput, TraceWriter log)
+        public void Calculate(DiskSize myDiskSize, decimal maxdisks, decimal mincapacity, decimal miniops, decimal minthroughput, ILogger log)
         {
             decimal DiskCountCapacity = Math.Ceiling(mincapacity / myDiskSize.MaxDataDiskSizeGB);
             decimal DiskCountIops = Math.Ceiling(miniops / myDiskSize.MaxDataDiskIops);
@@ -72,13 +71,13 @@ namespace vmchooser
             DiskCountNeeded = Math.Max(DiskCountThroughput, DiskCountNeeded);
             decimal DiskConfigPrice = DiskCountNeeded * myDiskSize.Price;
 
-            log.Info("DiskConfigPrice : " + DiskConfigPrice.ToString());
-            log.Info("DiskPrice : " + DiskPrice.ToString());
-            log.Info("DiskCountCapacity : " + DiskCountCapacity.ToString());
-            log.Info("DiskCountIops : " + DiskCountIops.ToString());
-            log.Info("DiskCountThroughput : " + DiskCountThroughput.ToString());
-            log.Info("DiskCountNeeded : " + DiskCountNeeded.ToString());
-            log.Info("MaxDisks : " + maxdisks.ToString());
+            log.LogInformation("DiskConfigPrice : " + DiskConfigPrice.ToString());
+            log.LogInformation("DiskPrice : " + DiskPrice.ToString());
+            log.LogInformation("DiskCountCapacity : " + DiskCountCapacity.ToString());
+            log.LogInformation("DiskCountIops : " + DiskCountIops.ToString());
+            log.LogInformation("DiskCountThroughput : " + DiskCountThroughput.ToString());
+            log.LogInformation("DiskCountNeeded : " + DiskCountNeeded.ToString());
+            log.LogInformation("MaxDisks : " + maxdisks.ToString());
 
             if (DiskConfigPrice < DiskPrice && DiskCountNeeded <= maxdisks)
             {
@@ -237,7 +236,7 @@ namespace vmchooser
     {
         [FunctionName("GetDiskConfig")]
         [Display(Name = "GetDiskConfig", Description = "Find the best data disk configuration for your given specifications")]
-        public static async Task<HttpResponseMessage> Run([HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", "options", Route = null)]HttpRequestMessage req, TraceWriter log)
+        public static async Task<HttpResponseMessage> Run([HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", "options", Route = null)]HttpRequest req, ILogger log)
         {
             // CosmosDB Parameters, retrieved via environment variables
             string databaseName = Environment.GetEnvironmentVariable("cosmosdbDatabaseName");
@@ -251,36 +250,36 @@ namespace vmchooser
 
             // Region #
             string region = GetParameter("region", "europe-west", req).ToLower();
-            log.Info("Region : " + region.ToString());
+            log.LogInformation("Region : " + region.ToString());
             // Currency #
             string currency = GetParameter("currency", "EUR", req).ToUpper();
-            log.Info("Currency : " + currency.ToString());
+            log.LogInformation("Currency : " + currency.ToString());
             // Ssd #
             string disktype = GetParameter("disktype", "all", req).ToLower();
             string ssd = GetParameter("ssd", "all", req).ToLower();
             string[] ssdfilter = new string[3];
             ssdfilter = SSDFilter(disktype, ssd);
-            log.Info("SSD : " + ssd.ToString());
-            log.Info("Type : " + disktype.ToString());
-            log.Info("SSD[0] : " + ssdfilter[0]);
-            log.Info("SSD[1] : " + ssdfilter[1]);
-            log.Info("SSD[2] : " + ssdfilter[2]);
+            log.LogInformation("SSD : " + ssd.ToString());
+            log.LogInformation("Type : " + disktype.ToString());
+            log.LogInformation("SSD[0] : " + ssdfilter[0]);
+            log.LogInformation("SSD[1] : " + ssdfilter[1]);
+            log.LogInformation("SSD[2] : " + ssdfilter[2]);
             // IOPS (Min) #
             decimal iops = Convert.ToDecimal(GetParameter("iops", "1", req));
             iops = SetMinimum(iops, 1);
-            log.Info("IOPS : " + iops.ToString());
+            log.LogInformation("IOPS : " + iops.ToString());
             // Throughput (Min) #
             decimal throughput = Convert.ToDecimal(GetParameter("throughput", "1", req));
             throughput = SetMinimum(throughput, 1);
-            log.Info("Throughput : " + throughput.ToString());
+            log.LogInformation("Throughput : " + throughput.ToString());
             // Data (Disk Capacity) (Min) #
             decimal data = Convert.ToDecimal(GetParameter("data", "1", req));
             data = SetMinimum(data, 1);
-            log.Info("Data : " + data.ToString());
+            log.LogInformation("Data : " + data.ToString());
             // Max Disks (Min) #
             decimal maxdisks = Convert.ToDecimal(GetParameter("maxdisks", "64", req));
             maxdisks = SetMinimum(maxdisks, 1);
-            log.Info("MaxDisks : " + maxdisks.ToString());
+            log.LogInformation("MaxDisks : " + maxdisks.ToString());
 
             var filterBuilder = Builders<BsonDocument>.Filter;
             var filter = filterBuilder.Eq("type", "disk")
@@ -291,10 +290,6 @@ namespace vmchooser
             var sort = Builders<BsonDocument>.Sort.Ascending("price");
             var cursor = collection.Find<BsonDocument>(filter).Sort(sort).ToCursor();
 
-            // Load Application Insights
-            string ApplicationInsightsKey = TelemetryConfiguration.Active.InstrumentationKey = System.Environment.GetEnvironmentVariable("APPINSIGHTS_INSTRUMENTATIONKEY", EnvironmentVariableTarget.Process);
-            TelemetryClient telemetry = new TelemetryClient() { InstrumentationKey = ApplicationInsightsKey };
-
             // Get results and put them into a list of objects
             DiskConfig myDiskConfig = new DiskConfig();
             myDiskConfig.DiskPrice = 999999999;
@@ -303,11 +298,11 @@ namespace vmchooser
                 // Get RequestCharge
                 var LastRequestStatistics = database.RunCommand<BsonDocument>(new BsonDocument { { "getLastRequestStatistics", 1 } });
                 double RequestCharge = (double)LastRequestStatistics["RequestCharge"];
-                telemetry.TrackMetric("RequestCharge", RequestCharge);
+                log.LogMetric("RequestCharge", RequestCharge);
                 
-                // log.Info(document.ToString());
+                // log.LogInformation(document.ToString());
                 DiskSize myDiskSize = BsonSerializer.Deserialize<DiskSize>(document);
-                // log.Info(myDiskSize.Name);
+                // log.LogInformation(myDiskSize.Name);
                 myDiskSize.SetCurrency(currency);
                 myDiskConfig.Calculate(myDiskSize, maxdisks, data, iops, throughput, log);
             }
@@ -320,11 +315,9 @@ namespace vmchooser
             };
         }
 
-        static public string GetParameter(string name, string defaultvalue, HttpRequestMessage req)
+        static public string GetParameter(string name, string defaultvalue, HttpRequest req)
         {
-            string value = req.GetQueryNameValuePairs()
-                .FirstOrDefault(q => string.Compare(q.Key, name, true) == 0)
-                .Value;
+            string value = req.Query[name]; ;
             if (String.IsNullOrEmpty(value))
             {
                 value = defaultvalue;
