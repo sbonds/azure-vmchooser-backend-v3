@@ -1,0 +1,33 @@
+name: $(Date:yyyyMMdd)$(Rev:.r)
+resources:
+  repositories:
+  - repository: vmchooserbackendv3
+    type: github
+    name: vmchooser/azure-vmchooser-backend-v3
+    endpoint: vmchooser
+trigger:
+  batch: true
+  branches:
+    include:
+    - master
+stages:
+- stage: Build
+  displayName: Build & Push
+  jobs:
+  - job: Build_Shared
+    pool:
+      vmImage: 'ubuntu-latest'
+    steps:
+    - task: Docker@2
+      displayName: Login to ACR
+      inputs:
+        command: login
+        containerRegistry: vmchooserregistry
+    - task: Docker@2
+      displayName: Build and Push
+      inputs:
+        command: buildAndPush
+        repository: vmchooser/backendv3
+        tags: |
+          preview
+          $(Date:yyyyMMdd)$(Rev:.r)
