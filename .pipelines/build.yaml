@@ -30,4 +30,4 @@ stages:
         repository: vmchooser/backendv3
         tags: |
           preview
-          $(Date:yyyyMMdd)$(Rev:.r)
+          $(Build.BuildId)
