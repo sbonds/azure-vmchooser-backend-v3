@@ -1,5 +1,6 @@
 variable "workload" {
   type        = string
+  default     = "vmchooser"
   description = "The workload we are deploying"
 }
 
@@ -15,6 +16,7 @@ variable "namespace" {
 
 variable "imagename" {
   type        = string
+  default     = "vmchooser/backendv3"
   description = "The name of the container image"
 }
 
