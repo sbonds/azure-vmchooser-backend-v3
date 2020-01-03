@@ -2,47 +2,56 @@ provider "kubernetes" {
 
 }
 
-resource "kubernetes_namespace" "namespace" {
+resource "kubernetes_service" "backend" {
   metadata {
-    name = var.namespace
+    generate_name = "vmchooserbackend"
+  }
+  spec {
+    selector = {
+      workload = "vmchooserbackend"
+    }
+    session_affinity = "ClientIP"
+    port {
+      port        = 80
+      target_port = 80
+    }
+
+    type = "LoadBalancer"
   }
 }
 
-resource "kubernetes_deployment" "${var.workload}-backend" {
+resource "kubernetes_deployment" "backend" {
   metadata {
-    name = var.imagename
+    generate_name = "vmchooserbackend"
+    namespace = "default"
     labels = {
-      Workload = var.Workload
+      workload = "vmchooserbackend"
     }
   }
 
   spec {
     replicas = 3
 
+    selector {
+      match_labels = {
+        workload = "vmchooserbackend"
+      }
+    }
+
+    template {
+      metadata {
+        labels = {
+          workload = "vmchooserbackend"
+        }
+      }
+
       spec {
         container {
-          image = "${var.imagename}:${var.imagelabel}"
-          name  = "${var.workload}-backend"
-
-          resources {
-            limits {
-              cpu    = "0.5"
-              memory = "512Mi"
-            }
-            requests {
-              cpu    = "250m"
-              memory = "50Mi"
-            }
+          image = "vmchooserregistry.azurecr.io/vmchooser/backendv3:preview"
+          name  = "vmchooserbackend"
+          port {
+            container_port = 80
           }
-
-          liveness_probe {
-            http_get {
-              path = "/"
-              port = 80
-            }
-
-          initial_delay_seconds = 3
-          period_seconds        = 3
         }
       }
     }

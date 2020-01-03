@@ -28,12 +28,27 @@ function getClusterKubectl {
 }
 
 function setClusterTags {
-  temp=`az resource tag --resource-group $2 --name $1 --resource-type "Microsoft.ContainerService/ManagedClusters" --tags "Deployment=$3" "Workload=$4" "Environment=$5"`
+  echo "Environment: $5"
+  temp=`az resource tag --resource-group $2 --name $1 --resource-type "Microsoft.ContainerService/ManagedClusters" --tags "Deployment=$3" "Workload=$4" "Environment=$5" `
 }
 
 function deployToCluster {
   echo "Deploying to $1"
-  # TODO : ADD TF Commands / more parameters / etc
+  clustername=$1
+  clusterrg=$2
+  enviromment="dev"
+  namespace="default"
+  workload="vmchooser"
+  imagename="vmchooser/backendv3"
+  imagelabel="preview"
+
+  getClusterKubectl $clustername $clusterrg
+  
+  cd backend
+  terraform init -input=false -var 'workload=$(workload)' -var 'enviromment=$(enviromment)' -var 'namespace=$(namespace)' -var 'imagename=$(imagename)' -var 'imagelabel=$(imagelabel)'
+  terraform plan -input=false -var 'workload=$(workload)' -var 'enviromment=$(enviromment)' -var 'namespace=$(namespace)' -var 'imagename=$(imagename)' -var 'imagelabel=$(imagelabel)'
+  terraform apply -input=false -auto-approve -var 'workload=$(workload)' -var 'enviromment=$(enviromment)' -var 'namespace=$(namespace)' -var 'imagename=$(imagename)' -var 'imagelabel=$(imagelabel)'
+  cd ..
 }
 
 # main runtime
@@ -51,10 +66,9 @@ echo "Looking for newly created clusters"
 for clustername in $created
 do
   clusterrg=$(getClusterResourcegroup $clustername)
-  getClusterKubectl $clustername $clusterrg
-  deployToCluster $1
-  echo "Setting $clustername to Ready"
-  setClusterTags $clustername $clusterrg "Ready" $workload $enviromnent
+  deployToCluster $clustername $clusterrg
+  echo "Setting $clustername to Active"
+  setClusterTags $clustername $clusterrg "Active" $workload $environment
   deprecate=true
 done
 
@@ -62,17 +76,16 @@ echo "Looking for Deprecated clusters"
 for clustername in $deprecated
 do
   clusterrg=$(getClusterResourcegroup $clustername)
-  getClusterKubectl $clustername $clusterrg
-  deployToCluster $1
+  deployToCluster $clustername $clusterrg
 done
 
 echo "Looking for Active clusters"
 for clustername in $active
 do
   clusterrg=$(getClusterResourcegroup $clustername)
-  getClusterKubectl $clustername $clusterrg
-  deployToCluster $1
-  if (deprecate)
+  deployToCluster $clustername $clusterrg
+  if ($deprecate)
+  then
     echo "Deprecating $clustername"
     setClusterTags $clustername $clusterrg "Deprecated" $workload $enviromnent
   fi
