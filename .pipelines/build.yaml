@@ -42,9 +42,9 @@ stages:
     steps: 
     - bash: |
         az login --service-principal -u "$(ARMCLIENTID)" -p "$(ARMCLIENTSECRET)" --tenant "$(armtenantid)"
-        az account set -s "$(armsubscriptionid)""
-        az configure --defaults acr="$(vmchooserregistry)""
-        az acr helm repo add  
+        az account set -s "$(armsubscriptionid)"
+        az configure --defaults acr="$(vmchooserregistry)"
+        az acr helm repo add -n "$(vmchooserregistry)"
       displayName: Enable ACR Integration
     - task: qetza.replacetokens.replacetokens-task.replacetokens@3
       displayName: 'Replace tokens in yaml files'
