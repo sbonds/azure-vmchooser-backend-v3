@@ -1,4 +1,4 @@
-name: $(Date:yyyyMMdd)$(Rev:.r)
+name: 3.0.$(Rev:r)
 resources:
   repositories:
   - repository: vmchooserbackendv3
@@ -44,6 +44,7 @@ stages:
         az login --service-principal -u "$(ARMCLIENTID)" -p "$(ARMCLIENTSECRET)" --tenant "$(armtenantid)"
         az account set -s "$(armsubscriptionid)"
         az configure --defaults acr="$(vmchooserregistry)"
+        helm init --client-only
         az acr helm repo add -n "$(vmchooserregistry)"
       displayName: Enable ACR Integration
       workingDirectory: $(Build.Repository.LocalPath)/helm/
