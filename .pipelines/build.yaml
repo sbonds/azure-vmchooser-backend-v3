@@ -11,26 +11,26 @@ trigger:
     include:
     - master
 stages:
-#- stage: BuildContainerImage
-#  displayName: Build & Push Container Image
-#  jobs:
-#  - job: BuildContainer
-#    pool:
-#      vmImage: 'ubuntu-latest'
-#    steps:
-#    - task: Docker@2
-#      displayName: Login to ACR
-#      inputs:
-#        command: login
-#        containerRegistry: vmchooserregistry
-#    - task: Docker@2
-#      displayName: Build and Push
-#      inputs:
-#        command: buildAndPush
-#        repository: vmchooser/backendv3
-#        tags: |
-#          preview
-#          $(Build.BuildId)
+- stage: BuildContainerImage
+  displayName: Build & Push Container Image
+  jobs:
+  - job: BuildContainer
+    pool:
+      vmImage: 'ubuntu-latest'
+    steps:
+    - task: Docker@2
+      displayName: Login to ACR
+      inputs:
+        command: login
+        containerRegistry: vmchooserregistry
+    - task: Docker@2
+      displayName: Build and Push
+      inputs:
+        command: buildAndPush
+        repository: vmchooser/backendv3
+        tags: |
+          preview
+          $(Build.BuildId)
 - stage: BuildHelmChart
   displayName: Update & Push Helm Chart
   jobs: 
@@ -46,6 +46,7 @@ stages:
         az configure --defaults acr="$(vmchooserregistry)"
         az acr helm repo add -n "$(vmchooserregistry)"
       displayName: Enable ACR Integration
+      workingDirectory: $(Build.Repository.LocalPath)/helm/
     - task: qetza.replacetokens.replacetokens-task.replacetokens@3
       displayName: 'Replace tokens in yaml files'
       inputs:
@@ -54,7 +55,9 @@ stages:
     - bash: |
         helm package ./vmchooserbackend/
       displayName: Package Helm Chart
+      workingDirectory: $(Build.Repository.LocalPath)/helm/
     - bash: |
         az acr helm push ./*.tgz
       displayName: Push Helm Chart to ACR Repo
+      workingDirectory: $(Build.Repository.LocalPath)/helm/
       
