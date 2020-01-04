@@ -40,17 +40,17 @@ stages:
     pool:
       vmImage: 'ubuntu-latest'
     steps: 
-    - task: qetza.replacetokens.replacetokens-task.replacetokens@3
-      displayName: 'Replace tokens in yaml files'
-      inputs:
-        targetFiles: |
-          **/*.yaml
     - bash: |
         az login -u $(ARMCLIENTID) -p $(ARMCLIENTSECRET)
         az account set -s $(armsubscriptionid)
         az configure --defaults acr=$(vmchooserregistry)
         az acr helm repo add  
       displayName: Enable ACR Integration
+    - task: qetza.replacetokens.replacetokens-task.replacetokens@3
+      displayName: 'Replace tokens in yaml files'
+      inputs:
+        targetFiles: |
+          **/*.yaml
     - bash: |
         helm package ./vmchooserbackend/
       displayName: Package Helm Chart
