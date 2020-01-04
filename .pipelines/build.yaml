@@ -11,10 +11,10 @@ trigger:
     include:
     - master
 stages:
-- stage: Build
-  displayName: Build & Push
+- stage: BuildContainerImage
+  displayName: Build & Push Container Image
   jobs:
-  - job: Build_Shared
+  - job: BuildContainer
     pool:
       vmImage: 'ubuntu-latest'
     steps:
@@ -31,3 +31,30 @@ stages:
         tags: |
           preview
           $(Build.BuildId)
+- stage: BuildHelmChart
+  displayName: Update & Push Helm Chart
+  jobs: 
+  - job: BuildChart
+    variables:
+    - group: vmchooser
+    pool:
+      vmImage: 'ubuntu-latest'
+    steps: 
+    - task: qetza.replacetokens.replacetokens-task.replacetokens@3
+      displayName: 'Replace tokens in yaml files'
+      inputs:
+        targetFiles: |
+          **/*.yaml
+    - bash: |
+        az login -u $(ARMCLIENTID) -p $(ARMCLIENTSECRET)
+        az account set -s $(armsubscriptionid)
+        az configure --defaults acr=$(vmchooserregistry)
+        az acr helm repo add  
+      displayName: Enable ACR Integration
+    - bash: |
+        helm package ./vmchooserbackend/
+      displayName: Package Helm Chart
+    - bash: |
+        az acr helm push ./*.tgz
+      displayName: Push Helm Chart to ACR Repo
+      

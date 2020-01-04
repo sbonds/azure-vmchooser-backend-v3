@@ -1,0 +1,6 @@
+apiVersion: v2
+name: vmchooserbackend
+description: VMchooser backend
+type: application
+version: #{Build.BuildNumber}#
+appVersion: #{Build.BuildNumber}#
