@@ -4,7 +4,7 @@
 
 replicaCount: 1
 
-appVersion: preview
+appVersion: #{Build.BuildId}#
 
 image:
   repository: vmchooserregistry.azurecr.io/vmchooser/backendv3

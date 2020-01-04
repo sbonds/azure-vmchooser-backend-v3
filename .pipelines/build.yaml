@@ -29,8 +29,9 @@ stages:
         command: buildAndPush
         repository: vmchooser/backendv3
         tags: |
-          preview
+          $(Build.BuildNumber)
           $(Build.BuildId)
+          latest
 - stage: BuildHelmChart
   displayName: Update & Push Helm Chart
   jobs: 
