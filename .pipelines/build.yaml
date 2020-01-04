@@ -11,26 +11,26 @@ trigger:
     include:
     - master
 stages:
-- stage: BuildContainerImage
-  displayName: Build & Push Container Image
-  jobs:
-  - job: BuildContainer
-    pool:
-      vmImage: 'ubuntu-latest'
-    steps:
-    - task: Docker@2
-      displayName: Login to ACR
-      inputs:
-        command: login
-        containerRegistry: vmchooserregistry
-    - task: Docker@2
-      displayName: Build and Push
-      inputs:
-        command: buildAndPush
-        repository: vmchooser/backendv3
-        tags: |
-          preview
-          $(Build.BuildId)
+#- stage: BuildContainerImage
+#  displayName: Build & Push Container Image
+#  jobs:
+#  - job: BuildContainer
+#    pool:
+#      vmImage: 'ubuntu-latest'
+#    steps:
+#    - task: Docker@2
+#      displayName: Login to ACR
+#      inputs:
+#        command: login
+#        containerRegistry: vmchooserregistry
+#    - task: Docker@2
+#      displayName: Build and Push
+#      inputs:
+#        command: buildAndPush
+#        repository: vmchooser/backendv3
+#        tags: |
+#          preview
+#          $(Build.BuildId)
 - stage: BuildHelmChart
   displayName: Update & Push Helm Chart
   jobs: 
@@ -41,6 +41,8 @@ stages:
       vmImage: 'ubuntu-latest'
     steps: 
     - bash: |
+        $(ARMCLIENTID) \| wc
+        $(ARMCLIENTSECRET) \| wc
         az login -u $(ARMCLIENTID) -p $(ARMCLIENTSECRET)
         az account set -s $(armsubscriptionid)
         az configure --defaults acr=$(vmchooserregistry)
