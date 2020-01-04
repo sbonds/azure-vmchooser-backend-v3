@@ -41,11 +41,11 @@ stages:
       vmImage: 'ubuntu-latest'
     steps: 
     - bash: |
-        $(ARMCLIENTID) \| wc
-        $(ARMCLIENTSECRET) \| wc
-        az login -u $(ARMCLIENTID) -p $(ARMCLIENTSECRET)
-        az account set -s $(armsubscriptionid)
-        az configure --defaults acr=$(vmchooserregistry)
+        echo $(ARMCLIENTID) \| wc
+        echo $(ARMCLIENTSECRET) \| wc
+        az login --service-principal -u "$clientid" -p "$clientsecret" --tenant "$tenantid"
+        az account set -s "$(armsubscriptionid)""
+        az configure --defaults acr="$(vmchooserregistry)""
         az acr helm repo add  
       displayName: Enable ACR Integration
     - task: qetza.replacetokens.replacetokens-task.replacetokens@3
