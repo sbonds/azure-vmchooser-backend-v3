@@ -14,7 +14,13 @@ imagePullSecrets: []
 nameOverride: ""
 fullnameOverride: ""
 
-extraEnvs: []
+environmentVariables:
+  APPINSIGHTS_INSTRUMENTATIONKEY: ""
+  cosmosdbCollectionName: ""
+  cosmosdbDatabaseName: ""
+  cosmosdbHostName: ""
+  cosmosdbMongodbConnectionString: ""
+  cosmosdbPassword: ""
 
 serviceAccount:
   # Specifies whether a service account should be created

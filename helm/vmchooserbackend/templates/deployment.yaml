@@ -27,10 +27,13 @@ spec:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.image.repository }}:{{ .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          {{- with .Values.extraEnvs }}
           env:
-            {{- toYaml . | nindent 12 }}
-          {{- end }}
+            - APPINSIGHTS_INSTRUMENTATIONKEY: {{ .Values.environmentVariables.APPINSIGHTS_INSTRUMENTATIONKEY }}
+            - cosmosdbCollectionName: {{ .Values.environmentVariables.cosmosdbCollectionName }}
+            - cosmosdbDatabaseName: {{ .Values.environmentVariables.cosmosdbDatabaseName }}
+            - cosmosdbHostName: {{ .Values.environmentVariables.cosmosdbHostName }}
+            - cosmosdbMongodbConnectionString: {{ .Values.environmentVariables.cosmosdbMongodbConnectionString }}
+            - cosmosdbPassword: {{ .Values.environmentVariables.cosmosdbPassword }}
           ports:
             - name: http
               containerPort: 80
