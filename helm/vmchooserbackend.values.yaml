@@ -1,0 +1,7 @@
+environmentVariables:
+  APPINSIGHTS_INSTRUMENTATIONKEY: #{APPINSIGHTS_INSTRUMENTATIONKEY}#
+  cosmosdbCollectionName: #{cosmosdbCollectionName}#
+  cosmosdbDatabaseName: #{cosmosdbDatabaseName}#
+  cosmosdbHostName: #{cosmosdbHostName}#
+  cosmosdbMongodbConnectionString: #{cosmosdbMongodbConnectionString}#
+  cosmosdbPassword: #{cosmosdbPassword}#

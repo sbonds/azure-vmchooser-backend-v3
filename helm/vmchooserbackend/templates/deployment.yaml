@@ -28,12 +28,18 @@ spec:
           image: "{{ .Values.image.repository }}:{{ .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           env:
-            - APPINSIGHTS_INSTRUMENTATIONKEY: {{ .Values.environmentVariables.APPINSIGHTS_INSTRUMENTATIONKEY }}
-            - cosmosdbCollectionName: {{ .Values.environmentVariables.cosmosdbCollectionName }}
-            - cosmosdbDatabaseName: {{ .Values.environmentVariables.cosmosdbDatabaseName }}
-            - cosmosdbHostName: {{ .Values.environmentVariables.cosmosdbHostName }}
-            - cosmosdbMongodbConnectionString: {{ .Values.environmentVariables.cosmosdbMongodbConnectionString }}
-            - cosmosdbPassword: {{ .Values.environmentVariables.cosmosdbPassword }}
+          - name: APPINSIGHTS_INSTRUMENTATIONKEY
+            value: {{ .Values.environmentVariables.APPINSIGHTS_INSTRUMENTATIONKEY }}
+          - name: cosmosdbCollectionName
+            value: {{ .Values.environmentVariables.cosmosdbCollectionName }}
+          - name: cosmosdbDatabaseName
+            value: {{ .Values.environmentVariables.cosmosdbDatabaseName }}
+          - name: cosmosdbHostName
+            value: {{ .Values.environmentVariables.cosmosdbHostName }}
+          - name: cosmosdbMongodbConnectionString
+            value: {{ .Values.environmentVariables.cosmosdbMongodbConnectionString }}
+          - name: cosmosdbPassword
+            value: {{ .Values.environmentVariables.cosmosdbPassword }}
           ports:
             - name: http
               containerPort: 80

@@ -50,10 +50,10 @@ stages:
       displayName: Enable ACR Integration
       workingDirectory: $(Build.Repository.LocalPath)/helm/
     - task: qetza.replacetokens.replacetokens-task.replacetokens@3
-      displayName: 'Replace tokens in yaml files'
+      displayName: 'Replace tokens in Chart.yaml files'
       inputs:
         targetFiles: |
-          **/*.yaml
+          **/Chart.yaml
     - bash: |
         helm package ./vmchooserbackend/
       displayName: Package Helm Chart
@@ -62,4 +62,27 @@ stages:
         az acr helm push ./*.tgz
       displayName: Push Helm Chart to ACR Repo
       workingDirectory: $(Build.Repository.LocalPath)/helm/
-      
+- stage: DeployHelmChartDev
+  displayName: Deploy to Dev
+  jobs: 
+  - job: DeployChartDev
+    variables:
+    - group: vmchooser
+    - group: vmchooserdev
+    pool:
+      vmImage: 'ubuntu-latest'
+    steps:
+    - task: qetza.replacetokens.replacetokens-task.replacetokens@3
+      displayName: 'Replace tokens in vmchooserbackend.values.yaml files'
+      inputs:
+        targetFiles: |
+          **/vmchooserbackend.values.yaml
+    - bash: |
+        az login --service-principal -u "$(ARMCLIENTID)" -p "$(ARMCLIENTSECRET)" --tenant "$(armtenantid)"
+        az account set -s "$(armsubscriptionid)"
+        az configure --defaults acr="$(vmchooserregistry)"
+        helm init --client-only
+        az acr helm repo add -n "$(vmchooserregistry)"
+        ./discoveranddeploy.sh "vmchooser" "dev" "default" "$(Build.BuildId)" "vmchooserregistry/vmchooserbackend" "vmchooserbackend" "vmchooserbackend.values.yaml"
+      displayName: Discover and Deploy Chart to all Clusters with appropriate tags
+      workingDirectory: $(Build.Repository.LocalPath)/helm/
