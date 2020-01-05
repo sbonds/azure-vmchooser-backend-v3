@@ -1,5 +1,5 @@
 environmentVariables:
-  APPINSIGHTS_INSTRUMENTATIONKEY: #{APPINSIGHTS_INSTRUMENTATIONKEY}#
+  APPINSIGHTS_INSTRUMENTATIONKEY: #{APPINSIGHTSINSTRUMENTATIONKEY}#
   cosmosdbCollectionName: #{cosmosdbCollectionName}#
   cosmosdbDatabaseName: #{cosmosdbDatabaseName}#
   cosmosdbHostName: #{cosmosdbHostName}#
