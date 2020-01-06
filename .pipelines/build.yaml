@@ -84,7 +84,6 @@ stages:
         curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash 
         az acr helm repo add -n "$(vmchooserregistry)"
         helm version
-        helm init
         helm repo update
         helm search repo vmchooser
         ./discoveranddeploy.sh "vmchooser" "dev" "default" "$(Build.BuildId)" "vmchooserregistry/vmchooserbackend" "vmchooserbackend" "vmchooserbackend.values.yaml"
