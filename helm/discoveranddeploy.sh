@@ -29,9 +29,12 @@ function deployToCluster {
   clustername=$1
   clusterrg=$(getClusterResourcegroup $clustername)
   getClusterKubectl $clustername $clusterrg
+  helm version
   helm init --upgrade --service-account default
   kubectl -n kube-system wait --for=condition=Ready pod -l name=tiller --timeout=300s
   helm repo update
+  helm search repo vmchooser
+  cat $valuesfile
   helm install 'vmchooserregistry/vmchooserbackend' --name "$deploymentname" --version "$version" -n "$namespace" -f "$valuesfile"
 }
 
