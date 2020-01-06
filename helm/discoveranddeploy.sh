@@ -7,7 +7,6 @@ chart=$5
 deploymentname=$6 
 valuesfile=$7
 az extension add --name resource-graph
-helm init --upgrade --service-account default
 
 # functions
 function getClusterName {
@@ -30,6 +29,7 @@ function deployToCluster {
   clustername=$1
   clusterrg=$(getClusterResourcegroup $clustername)
   getClusterKubectl $clustername $clusterrg
+  helm init --upgrade --service-account default
   helm install $deploymentname $chart --version $version -n $namespace -f $valuesfile
 }
 
