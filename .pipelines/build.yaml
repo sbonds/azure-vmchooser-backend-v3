@@ -81,8 +81,11 @@ stages:
         az login --service-principal -u "$(ARMCLIENTID)" -p "$(ARMCLIENTSECRET)" --tenant "$(armtenantid)"
         az account set -s "$(armsubscriptionid)"
         az configure --defaults acr="$(vmchooserregistry)"
-        helm init --client-only
         az acr helm repo add -n "$(vmchooserregistry)"
-        ./discoveranddeploy.sh "vmchooser" "dev" "default" "3.0.$(Rev:r)" "vmchooserregistry/vmchooserbackend" "vmchooserbackend" "vmchooserbackend.values.yaml"
+        helm version
+        helm init
+        helm repo update
+        helm search repo vmchooser
+        ./discoveranddeploy.sh "vmchooser" "dev" "default" "$(Build.BuildId)" "vmchooserregistry/vmchooserbackend" "vmchooserbackend" "vmchooserbackend.values.yaml"
       displayName: Discover and Deploy Chart to all Clusters with appropriate tags
       workingDirectory: $(Build.Repository.LocalPath)/helm/
