@@ -7,6 +7,7 @@ chart=$5
 deploymentname=$6 
 valuesfile=$7
 az extension add --name resource-graph
+helm init --upgrade --service-account default
 
 # functions
 function getClusterName {
