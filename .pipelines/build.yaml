@@ -81,6 +81,7 @@ stages:
         az login --service-principal -u "$(ARMCLIENTID)" -p "$(ARMCLIENTSECRET)" --tenant "$(armtenantid)"
         az account set -s "$(armsubscriptionid)"
         az configure --defaults acr="$(vmchooserregistry)"
+        curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash 
         az acr helm repo add -n "$(vmchooserregistry)"
         helm version
         helm init
