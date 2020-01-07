@@ -29,6 +29,7 @@ function deployToCluster {
   clustername=$1
   clusterrg=$(getClusterResourcegroup $clustername)
   getClusterKubectl $clustername $clusterrg
+  echo "helm install $deploymentname vmchooserregistry/vmchooserbackend --version $version -n $namespace -f $valuesfile"
   helm install "$deploymentname" 'vmchooserregistry/vmchooserbackend' --version "$version" -n "$namespace" -f "$valuesfile"
 }
 
