@@ -29,8 +29,9 @@ function deployToCluster {
   clustername=$1
   clusterrg=$(getClusterResourcegroup $clustername)
   getClusterKubectl $clustername $clusterrg
-  echo "helm install $deploymentname vmchooserregistry/vmchooserbackend --version $version -n $namespace -f $valuesfile"
-  helm install "$deploymentname" 'vmchooserregistry/vmchooserbackend' --version "$version" -n "$namespace" -f "$valuesfile"
+  lastversion=`helm history "$deploymentname" | tail -n 1 | awk '{ print $1 }'`
+  helm status "$deploymentname" | grep -i deployed && action="upgrade" || action="install"
+  helm $action "$deploymentname" 'vmchooserregistry/vmchooserbackend' --version "$version" -n "$namespace" -f "$valuesfile" || helm rollback "$deploymentname" "$lastversion"
 }
 
 # main runtime
