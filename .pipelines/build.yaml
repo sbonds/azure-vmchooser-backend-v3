@@ -1,4 +1,4 @@
-name: 3.0.$(Rev:r)
+name: 3.0.$(Build.BuildId)
 resources:
   repositories:
   - repository: vmchooserbackendv3
@@ -86,6 +86,6 @@ stages:
         helm version
         helm repo update
         helm search repo vmchooser
-        ./discoveranddeploy.sh "vmchooser" "dev" "default" "$(Build.BuildId)" "vmchooserregistry/vmchooserbackend" "vmchooserbackend" "vmchooserbackend.values.yaml"
+        ./discoveranddeploy.sh "vmchooser" "dev" "default" "3.0.$(Build.BuildId)" "vmchooserregistry/vmchooserbackend" "vmchooserbackend" "vmchooserbackend.values.yaml"
       displayName: Discover and Deploy Chart to all Clusters with appropriate tags
       workingDirectory: $(Build.Repository.LocalPath)/helm/
