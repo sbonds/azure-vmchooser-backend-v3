@@ -2,9 +2,9 @@ name: 3.0.$(Build.BuildId)
 resources:
   repositories:
   - repository: vmchooserbackendv3
-      type: github
-      name: vmchooser/azure-vmchooser-backend-v3
-      endpoint: vmchooser
+    type: github
+    name: vmchooser/azure-vmchooser-backend-v3
+    endpoint: vmchooser
 trigger:
   batch: true
   branches:
