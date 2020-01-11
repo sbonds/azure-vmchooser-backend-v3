@@ -1,10 +1,10 @@
 name: 3.0.$(Build.BuildId)
 resources:
   repositories:
-  - repository: vmchoosertraefik
-    type: github
-    name: vmchooser/traefik-helm-chart
-    endpoint: vmchooser
+  - repository: vmchooserbackendv3
+      type: github
+      name: vmchooser/azure-vmchooser-backend-v3
+      endpoint: vmchooser
 trigger:
   batch: true
   branches:
