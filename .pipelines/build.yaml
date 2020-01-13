@@ -62,58 +62,74 @@ stages:
         az acr helm push ./*.tgz
       displayName: Push Helm Chart to ACR Repo
       workingDirectory: $(Build.Repository.LocalPath)/helm/
+    - publish: $(Build.SourcesDirectory)/helm/discoveranddeploy.sh
+      artifact: deployvmchooserbackend
 - stage: DeployHelmChartDev
   displayName: Deploy to Dev
   jobs: 
-  - job: DeployChartDev
-    variables:
-    - group: vmchooser
-    - group: vmchooserdev
-    pool:
-      vmImage: 'ubuntu-latest'
-    steps:
-    - task: qetza.replacetokens.replacetokens-task.replacetokens@3
-      displayName: 'Replace tokens in vmchooserbackend.values.yaml files'
-      inputs:
-        targetFiles: |
-          **/vmchooserbackend.values.yaml
-    - bash: |
-        helm version
-        helm lint ./vmchooserbackend
-        az login --service-principal -u "$(ARMCLIENTID)" -p "$(ARMCLIENTSECRET)" --tenant "$(armtenantid)"
-        az account set -s "$(armsubscriptionid)"
-        az configure --defaults acr="$(vmchooserregistry)"
-        curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash 
-        az acr helm repo add -n "$(vmchooserregistry)"
-        helm repo update
-        helm search repo vmchooser
-        ./discoveranddeploy.sh "vmchooser" "dev" "default" "3.0.$(Build.BuildId)" "vmchooserregistry/vmchooserbackend" "vmchooserbackend" "vmchooserbackend.values.yaml"
-      displayName: Discover and Deploy Chart to all Clusters with appropriate tags
-      workingDirectory: $(Build.Repository.LocalPath)/helm/
+    - deployment: DeployChartDev
+      variables:
+      - group: vmchooser
+      - group: vmchooserdev
+      environment: 'vmchooserdev'
+      strategy: 
+        runOnce:
+          deploy:          
+            pool: 
+              vmImage: 'ubuntu-latest'
+            steps:
+            - download: current
+              artifact: deployvmchooserbackend
+            - task: qetza.replacetokens.replacetokens-task.replacetokens@3
+              displayName: 'Replace tokens in vmchooserbackend.values.yaml files'
+              inputs:
+                targetFiles: |
+                  **/vmchooserbackend.values.yaml
+            - bash: |
+                helm version
+                helm lint ./vmchooserbackend
+                az login --service-principal -u "$(ARMCLIENTID)" -p "$(ARMCLIENTSECRET)" --tenant "$(armtenantid)"
+                az account set -s "$(armsubscriptionid)"
+                az configure --defaults acr="$(vmchooserregistry)"
+                curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash 
+                az acr helm repo add -n "$(vmchooserregistry)"
+                helm repo update
+                helm search repo vmchooser
+                chmod +x $(Pipeline.Workspace)/deployvmchooserbackend/*.sh
+                $(Pipeline.Workspace)/deployvmchooserbackend/discoveranddeploy.sh "vmchooser" "dev" "default" "3.0.$(Build.BuildId)" "vmchooserregistry/vmchooserbackend" "vmchooserbackend" "vmchooserbackend.values.yaml"
+              displayName: Discover and Deploy Chart to all Clusters with appropriate tags
+              workingDirectory: $(Build.Repository.LocalPath)/helm/
 - stage: DeployHelmChartPrd
   displayName: Deploy to Prd
   jobs: 
-  - job: DeployChartPrd
-    variables:
-    - group: vmchooser
-    - group: vmchooserprd
-    pool:
-      vmImage: 'ubuntu-latest'
-    steps:
-    - task: qetza.replacetokens.replacetokens-task.replacetokens@3
-      displayName: 'Replace tokens in vmchooserbackend.values.yaml files'
-      inputs:
-        targetFiles: |
-          **/vmchooserbackend.values.yaml
-    - bash: |
-        az login --service-principal -u "$(ARMCLIENTID)" -p "$(ARMCLIENTSECRET)" --tenant "$(armtenantid)"
-        az account set -s "$(armsubscriptionid)"
-        az configure --defaults acr="$(vmchooserregistry)"
-        curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash 
-        az acr helm repo add -n "$(vmchooserregistry)"
-        helm version
-        helm repo update
-        helm search repo vmchooser
-        ./discoveranddeploy.sh "vmchooser" "prd" "default" "3.0.$(Build.BuildId)" "vmchooserregistry/vmchooserbackend" "vmchooserbackend" "vmchooserbackend.values.yaml"
-      displayName: Discover and Deploy Chart to all Clusters with appropriate tags
-      workingDirectory: $(Build.Repository.LocalPath)/helm/
+    - deployment: DeployChartDev
+      variables:
+      - group: vmchooser
+      - group: vmchooserprd
+      environment: 'vmchooserprd'
+      strategy: 
+        runOnce:
+          deploy:          
+            pool: 
+              vmImage: 'ubuntu-latest'
+            steps:
+            - download: current
+              artifact: deployvmchooserbackend
+            - task: qetza.replacetokens.replacetokens-task.replacetokens@3
+              displayName: 'Replace tokens in vmchooserbackend.values.yaml files'
+              inputs:
+                targetFiles: |
+                  **/vmchooserbackend.values.yaml
+            - bash: |
+                az login --service-principal -u "$(ARMCLIENTID)" -p "$(ARMCLIENTSECRET)" --tenant "$(armtenantid)"
+                az account set -s "$(armsubscriptionid)"
+                az configure --defaults acr="$(vmchooserregistry)"
+                curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash 
+                az acr helm repo add -n "$(vmchooserregistry)"
+                helm version
+                helm repo update
+                helm search repo vmchooser
+                chmod +x $(Pipeline.Workspace)/deployvmchooserbackend/*.sh
+                $(Pipeline.Workspace)/deployvmchooserbackend/discoveranddeploy.sh "vmchooser" "prd" "default" "3.0.$(Build.BuildId)" "vmchooserregistry/vmchooserbackend" "vmchooserbackend" "vmchooserbackend.values.yaml"
+              displayName: Discover and Deploy Chart to all Clusters with appropriate tags
+              workingDirectory: $(Build.Repository.LocalPath)/helm/
