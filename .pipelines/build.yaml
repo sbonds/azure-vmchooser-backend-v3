@@ -62,7 +62,7 @@ stages:
         az acr helm push ./*.tgz
       displayName: Push Helm Chart to ACR Repo
       workingDirectory: $(Build.Repository.LocalPath)/helm/
-    - publish: $(Build.SourcesDirectory)/helm/*.*
+    - publish: $(Build.SourcesDirectory)/helm
       artifact: deployvmchooserbackend
 - stage: DeployHelmChartDev
   displayName: Deploy to Dev
