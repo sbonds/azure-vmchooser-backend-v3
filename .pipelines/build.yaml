@@ -98,7 +98,7 @@ stages:
                 chmod +x $(Pipeline.Workspace)/deployvmchooserbackend/*.sh
                 $(Pipeline.Workspace)/deployvmchooserbackend/discoveranddeploy.sh "vmchooser" "dev" "default" "3.0.$(Build.BuildId)" "vmchooserregistry/vmchooserbackend" "vmchooserbackend" "vmchooserbackend.values.yaml"
               displayName: Discover and Deploy Chart to all Clusters with appropriate tags
-              workingDirectory: $(Build.Repository.LocalPath)/helm/
+              workingDirectory: $(Build.Repository.LocalPath)/
 - stage: DeployHelmChartPrd
   displayName: Deploy to Prd
   jobs: 
@@ -132,4 +132,4 @@ stages:
                 chmod +x $(Pipeline.Workspace)/deployvmchooserbackend/*.sh
                 $(Pipeline.Workspace)/deployvmchooserbackend/discoveranddeploy.sh "vmchooser" "prd" "default" "3.0.$(Build.BuildId)" "vmchooserregistry/vmchooserbackend" "vmchooserbackend" "vmchooserbackend.values.yaml"
               displayName: Discover and Deploy Chart to all Clusters with appropriate tags
-              workingDirectory: $(Build.Repository.LocalPath)/helm/
+              workingDirectory: $(Build.Repository.LocalPath)/
