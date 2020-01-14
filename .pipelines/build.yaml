@@ -96,7 +96,7 @@ stages:
                 helm repo update
                 helm search repo vmchooser
                 chmod +x $(Pipeline.Workspace)/deployvmchooserbackend/*.sh
-                $(Pipeline.Workspace)/deployvmchooserbackend/discoveranddeploy.sh "vmchooser" "dev" "default" "3.0.$(Build.BuildId)" "vmchooserregistry/vmchooserbackend" "vmchooserbackend" "$(Pipeline.Workspace)/deployvmchooserbackend/vmchooserbackend.values.yaml"
+                bash -x $(Pipeline.Workspace)/deployvmchooserbackend/discoveranddeploy.sh "vmchooser" "dev" "default" "3.0.$(Build.BuildId)" "vmchooserregistry/vmchooserbackend" "vmchooserbackend" "$(Pipeline.Workspace)/deployvmchooserbackend/vmchooserbackend.values.yaml"
               displayName: Discover and Deploy Chart to all Clusters with appropriate tags
               workingDirectory: $(Build.Repository.LocalPath)/
 - stage: DeployHelmChartPrd
@@ -130,6 +130,6 @@ stages:
                 helm repo update
                 helm search repo vmchooser
                 chmod +x $(Pipeline.Workspace)/deployvmchooserbackend/*.sh
-                $(Pipeline.Workspace)/deployvmchooserbackend/discoveranddeploy.sh "vmchooser" "prd" "default" "3.0.$(Build.BuildId)" "vmchooserregistry/vmchooserbackend" "vmchooserbackend" "$(Pipeline.Workspace)/deployvmchooserbackend/vmchooserbackend.values.yaml"
+                bash -x $(Pipeline.Workspace)/deployvmchooserbackend/discoveranddeploy.sh "vmchooser" "prd" "default" "3.0.$(Build.BuildId)" "vmchooserregistry/vmchooserbackend" "vmchooserbackend" "$(Pipeline.Workspace)/deployvmchooserbackend/vmchooserbackend.values.yaml"
               displayName: Discover and Deploy Chart to all Clusters with appropriate tags
               workingDirectory: $(Build.Repository.LocalPath)/
