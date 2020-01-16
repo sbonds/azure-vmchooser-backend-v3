@@ -48,12 +48,19 @@ function getTrafficManagerResourcegroup {
 }
 
 function addService2TrafficeManager {
-  pip=`kubectl get services | grep -i "$deploymentname" | awk '{ print $4 }'`
+  servicename=`kubectl get services | grep -i "$deploymentname" | awk '{ print $1 }'`
+  external_ip=""
+  while [ -z $external_ip ]; do
+    echo "Waiting for end point..."
+    external_ip=$(kubectl get svc "$servicename" --template="{{range .status.loadBalancer.ingress}}{{.ip}}{{end}}")
+    [ -z "$external_ip" ] && sleep 10
+  done
+  echo 'End point ready:' && echo $external_ip
   clustername=$1
   tmname=$(getTrafficManager)
   tmrg=$(getTrafficManagerResourcegroup $tmname)
   weight=1
-  az network traffic-manager endpoint create --resource-group "$tmrg" --profile-name "$tmname" --type externalEndpoints --name "$clustername" --target "$pip" --weight $weight
+  az network traffic-manager endpoint create --resource-group "$tmrg" --profile-name "$tmname" --type externalEndpoints --name "$clustername" --target "$external_ip" --weight $weight
 }
 
 # main runtime
