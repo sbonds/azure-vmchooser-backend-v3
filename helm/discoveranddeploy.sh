@@ -31,7 +31,7 @@ function deployToCluster {
   clustername=$1
   clusterrg=$(getClusterResourcegroup $clustername)
   getClusterKubectl $clustername $clusterrg
-  lastversion=`helm history "$deploymentname" | tail -n 1 | awk '{ print $1 }'`
+  lastversion=`helm history "$deploymentname" | grep -i 'deployed' | tail -n 1 | awk '{ print $1 }'`
   helm status "$deploymentname" | grep -i deployed && action="upgrade" || action="install"
   helm $action "$deploymentname" "$helmregistry" --version "$version" -n "$namespace" -f "$valuesfile" || helm rollback "$deploymentname" "$lastversion"
   # addService2TrafficeManager $clustername (commented out due to the usage of an ingress controller that will handle this endpoint)
