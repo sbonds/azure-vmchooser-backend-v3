@@ -1,0 +1,30 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: {{ .Chart.Name }}
+spec:
+  hosts:
+  - "*"
+  gateways:
+  - {{ .Chart.Name }}-gateway
+  http:
+  - match:
+    - uri:
+        prefix: /api/
+    route:
+    - destination:
+        host: {{ include "vmchooserbackend.fullname" . }}
+        port:
+          number: 80
+    corsPolicy:
+      allowOrigin:
+      - "*"
+      allowMethods:
+      - POST
+      - GET
+      - DELETE
+      - PATCH
+      - OPTIONS
+      allowCredentials: true
+      allowHeaders:
+      - "*"
