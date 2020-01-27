@@ -1,33 +1,29 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "vmchooserbackend.fullname" . }}
+  name: {{ .Chart.Name }}
   labels:
-    {{- include "vmchooserbackend.labels" . | nindent 4 }}
+    version: {{ .Chart.AppVersion }}
 spec:
-  replicas: {{ .Values.replicaCount }}
+  replicas: 1
   selector:
     matchLabels:
-      {{- include "vmchooserbackend.selectorLabels" . | nindent 6 }}
+      app: {{ .Chart.Name }}
+      version: {{ .Chart.AppVersion }}
   template:
     metadata:
       labels:
-        {{- include "vmchooserbackend.selectorLabels" . | nindent 8 }}
+        app: {{ .Chart.Name }}
+        version: {{ .Chart.AppVersion }}
     spec:
-    {{- with .Values.imagePullSecrets }}
-      imagePullSecrets:
-        {{- toYaml . | nindent 8 }}
-    {{- end }}
-      serviceAccountName: {{ include "vmchooserbackend.serviceAccountName" . }}
-      securityContext:
-        {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:
-        - name: {{ .Chart.Name }}
-          securityContext:
-            {{- toYaml .Values.securityContext | nindent 12 }}
-          image: "{{ .Values.image.repository }}:{{ .Chart.AppVersion }}"
-          imagePullPolicy: {{ .Values.image.pullPolicy }}
-          env:
+      - name: {{ .Chart.Name }}
+        image: "{{ .Values.image.repository }}:{{ .Chart.AppVersion }}"
+        resources:
+          requests:
+            cpu: "100m"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        env:
           - name: APPINSIGHTS_INSTRUMENTATIONKEY
             value: {{ .Values.environmentVariables.APPINSIGHTS_INSTRUMENTATIONKEY }}
           - name: cosmosdbCollectionName
@@ -40,29 +36,5 @@ spec:
             value: {{ .Values.environmentVariables.cosmosdbMongodbConnectionString }}
           - name: cosmosdbPassword
             value: {{ .Values.environmentVariables.cosmosdbPassword }}
-          ports:
-            - name: http
-              containerPort: 80
-              protocol: TCP
-          livenessProbe:
-            httpGet:
-              path: /
-              port: http
-          readinessProbe:
-            httpGet:
-              path: /
-              port: http
-          resources:
-            {{- toYaml .Values.resources | nindent 12 }}
-      {{- with .Values.nodeSelector }}
-      nodeSelector:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-    {{- with .Values.affinity }}
-      affinity:
-        {{- toYaml . | nindent 8 }}
-    {{- end }}
-    {{- with .Values.tolerations }}
-      tolerations:
-        {{- toYaml . | nindent 8 }}
-    {{- end }}
+        ports:
+        - containerPort: 80

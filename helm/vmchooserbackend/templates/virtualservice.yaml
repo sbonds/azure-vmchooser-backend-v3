@@ -10,10 +10,10 @@ spec:
   http:
   - match:
     - uri:
-        prefix: /
+        prefix: /api/
     route:
     - destination:
-        host: {{ include "vmchooserbackend.fullname" . }}
+        host: {{ .Chart.Name }}
         port:
           number: {{ .Values.service.port }}
     corsPolicy:
