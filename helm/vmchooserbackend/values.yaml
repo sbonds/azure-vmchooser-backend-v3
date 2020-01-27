@@ -14,6 +14,8 @@ imagePullSecrets: []
 nameOverride: ""
 fullnameOverride: ""
 
+hostname: "vmchooserbackend"
+
 environmentVariables:
   APPINSIGHTS_INSTRUMENTATIONKEY: ""
   cosmosdbCollectionName: ""

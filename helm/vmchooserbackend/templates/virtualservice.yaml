@@ -13,7 +13,7 @@ spec:
         prefix: /api/
     route:
     - destination:
-        host: {{ .Chart.Name }}
+        host: {{ .Values.hostname }}
         port:
           number: {{ .Values.service.port }}
     corsPolicy:

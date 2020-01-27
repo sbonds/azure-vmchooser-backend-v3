@@ -5,3 +5,4 @@ environmentVariables:
   cosmosdbHostName: #{cosmosdbHostName}#
   cosmosdbMongodbConnectionString: #{cosmosdbMongodbConnectionString}#
   cosmosdbPassword: #{cosmosdbPassword}#
+hostname: #{APIHOSTNAME}#
