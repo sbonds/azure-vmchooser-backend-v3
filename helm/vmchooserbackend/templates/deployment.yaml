@@ -3,25 +3,22 @@ kind: Deployment
 metadata:
   name: {{ .Chart.Name }}
   labels:
-    version: #{Build.BuildNumber}#
+    version: {{ .Values.appVersion }}
 spec:
   replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
       app: {{ .Chart.Name }}
-      version: #{Build.BuildNumber}#
+      version: {{ .Values.appVersion }}
   template:
     metadata:
       labels:
         app: {{ .Chart.Name }}
-        version: #{Build.BuildNumber}#
+        version: {{ .Values.appVersion }}
     spec:
       containers:
       - name: {{ .Chart.Name }}
         image: "{{ .Values.image.repository }}:{{ .Chart.AppVersion }}"
         imagePullPolicy: {{ .Values.image.pullPolicy }}
-        resources:
-          requests:
-            cpu: "100m"
         ports:
         - containerPort: 80
