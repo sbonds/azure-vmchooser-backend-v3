@@ -87,7 +87,7 @@ stages:
                   $(Pipeline.Workspace)/deployvmchooserbackend/vmchooserbackend.values.yaml
             - bash: |
                 helm version
-                helm lint ./vmchooserbackend
+                helm lint $(Pipeline.Workspace)/deployvmchooserbackend/
                 az login --service-principal -u "$(ARMCLIENTID)" -p "$(ARMCLIENTSECRET)" --tenant "$(armtenantid)"
                 az account set -s "$(armsubscriptionid)"
                 az configure --defaults acr="$(vmchooserregistry)"

@@ -3,11 +3,3 @@ appVersion: #{Build.BuildId}#
 image:
   repository: vmchooserregistry.azurecr.io/vmchooser/backendv3
   pullPolicy: IfNotPresent
-hostname: ""
-environmentVariables:
-  APPINSIGHTS_INSTRUMENTATIONKEY: ""
-  cosmosdbCollectionName: ""
-  cosmosdbDatabaseName: ""
-  cosmosdbHostName: ""
-  cosmosdbMongodbConnectionString: ""
-  cosmosdbPassword: ""

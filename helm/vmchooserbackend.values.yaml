@@ -1,3 +1,4 @@
+hostname: #{APIHOSTNAME}#
 environmentVariables:
   APPINSIGHTS_INSTRUMENTATIONKEY: #{APPINSIGHTSINSTRUMENTATIONKEY}#
   cosmosdbCollectionName: #{cosmosdbCollectionName}#
@@ -5,4 +6,3 @@ environmentVariables:
   cosmosdbHostName: #{cosmosdbHostName}#
   cosmosdbMongodbConnectionString: #{cosmosdbMongodbConnectionString}#
   cosmosdbPassword: #{cosmosdbPassword}#
-hostname: #{APIHOSTNAME}#
