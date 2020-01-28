@@ -1,54 +1,27 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: helloworld-v1
+  name: {{ .Chart.Name }}
   labels:
-    version: v1
+    version: #{Build.BuildNumber}#
 spec:
-  replicas: 1
+  replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
-      app: helloworld
-      version: v1
+      app: {{ .Chart.Name }}
+      version: #{Build.BuildNumber}#
   template:
     metadata:
       labels:
-        app: helloworld
-        version: v1
+        app: {{ .Chart.Name }}
+        version: #{Build.BuildNumber}#
     spec:
       containers:
-      - name: helloworld
-        image: docker.io/istio/examples-helloworld-v1
+      - name: {{ .Chart.Name }}
+        image: "{{ .Values.image.repository }}:{{ .Chart.AppVersion }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
         resources:
           requests:
             cpu: "100m"
-        imagePullPolicy: IfNotPresent #Always
         ports:
-        - containerPort: 5000
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: helloworld-v2
-  labels:
-    version: v2
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: helloworld
-      version: v2
-  template:
-    metadata:
-      labels:
-        app: helloworld
-        version: v2
-    spec:
-      containers:
-      - name: helloworld
-        image: docker.io/istio/examples-helloworld-v2
-        resources:
-          requests:
-            cpu: "100m"
-        imagePullPolicy: IfNotPresent #Always
-        ports:
-        - containerPort: 5000
+        - containerPort: 80
