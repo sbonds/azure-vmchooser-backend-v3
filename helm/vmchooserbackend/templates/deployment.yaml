@@ -1,40 +1,54 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ .Chart.Name }}
+  name: helloworld-v1
   labels:
-    version: {{ .Chart.AppVersion }}
+    version: v1
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: {{ .Chart.Name }}
-      version: {{ .Chart.AppVersion }}
+      app: helloworld
+      version: v1
   template:
     metadata:
       labels:
-        app: {{ .Chart.Name }}
-        version: {{ .Chart.AppVersion }}
+        app: helloworld
+        version: v1
     spec:
       containers:
-      - name: {{ .Chart.Name }}
-        image: "{{ .Values.image.repository }}:{{ .Chart.AppVersion }}"
+      - name: helloworld
+        image: docker.io/istio/examples-helloworld-v1
         resources:
           requests:
             cpu: "100m"
-        imagePullPolicy: {{ .Values.image.pullPolicy }}
-        env:
-          - name: APPINSIGHTS_INSTRUMENTATIONKEY
-            value: {{ .Values.environmentVariables.APPINSIGHTS_INSTRUMENTATIONKEY }}
-          - name: cosmosdbCollectionName
-            value: {{ .Values.environmentVariables.cosmosdbCollectionName }}
-          - name: cosmosdbDatabaseName
-            value: {{ .Values.environmentVariables.cosmosdbDatabaseName }}
-          - name: cosmosdbHostName
-            value: {{ .Values.environmentVariables.cosmosdbHostName }}
-          - name: cosmosdbMongodbConnectionString
-            value: {{ .Values.environmentVariables.cosmosdbMongodbConnectionString }}
-          - name: cosmosdbPassword
-            value: {{ .Values.environmentVariables.cosmosdbPassword }}
+        imagePullPolicy: IfNotPresent #Always
         ports:
-        - containerPort: 80
+        - containerPort: 5000
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: helloworld-v2
+  labels:
+    version: v2
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: helloworld
+      version: v2
+  template:
+    metadata:
+      labels:
+        app: helloworld
+        version: v2
+    spec:
+      containers:
+      - name: helloworld
+        image: docker.io/istio/examples-helloworld-v2
+        resources:
+          requests:
+            cpu: "100m"
+        imagePullPolicy: IfNotPresent #Always
+        ports:
+        - containerPort: 5000
