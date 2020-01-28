@@ -4,7 +4,7 @@ metadata:
   name: {{ .Chart.Name }}
 spec:
   hosts:
-  - {{ .Values.hostname }}
+  - "*"
   gateways:
   - {{ .Chart.Name }}-gateway
   http:
