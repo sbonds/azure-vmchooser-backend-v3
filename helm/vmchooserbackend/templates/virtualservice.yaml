@@ -16,3 +16,15 @@ spec:
         host: {{ .Chart.Name }}
         port:
           number: 80
+    corsPolicy:
+      allowOrigin:
+      - "*"
+      allowMethods:
+      - POST
+      - GET
+      - DELETE
+      - PATCH
+      - OPTIONS
+      allowCredentials: true
+      allowHeaders:
+      - "*"
