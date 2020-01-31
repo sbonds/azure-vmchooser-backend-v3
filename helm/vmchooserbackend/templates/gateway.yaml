@@ -11,4 +11,6 @@ spec:
       name: http
       protocol: HTTP
     hosts:
-    - "{{ .Values.hostname }}"
+    - "{{ .Values.hostname1 }}"
+    - "{{ .Values.hostname2 }}"
+    - "{{ .Values.hostname3 }}"

@@ -1,4 +1,6 @@
-hostname: #{APIHOSTNAME}#
+hostname1: #{APIHOSTNAME}#
+hostname2: #{APIHOSTNAMEEXT}#
+hostname3: #{APIHOSTNAMEROOT}#
 environmentVariables:
   APPINSIGHTS_INSTRUMENTATIONKEY: #{APPINSIGHTSINSTRUMENTATIONKEY}#
   cosmosdbCollectionName: #{cosmosdbCollectionName}#
