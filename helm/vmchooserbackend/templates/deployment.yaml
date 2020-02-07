@@ -31,3 +31,9 @@ spec:
             value: {{ .Values.environmentVariables.cosmosdbMongodbConnectionString }}
           - name: cosmosdbPassword
             value: {{ .Values.environmentVariables.cosmosdbPassword }}
+        livenessProbe:
+          httpGet:
+            path: /api/getRegions
+            port: 80
+          initialDelaySeconds: 3
+          periodSeconds: 3
