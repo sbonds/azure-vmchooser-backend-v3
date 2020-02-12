@@ -48,7 +48,7 @@ stages:
     steps:
     - task: AzureFunctionApp@1
       inputs:
-        azureSubscription: 'vmchooser'
+        azureSubscription: 'vmchooser.arm'
         appType: functionApp
         appName: 'vmchooser-dev-func-be'
 - stage: DeployPrd
@@ -60,6 +60,6 @@ stages:
     steps:
     - task: AzureFunctionApp@1
       inputs:
-        azureSubscription: 'vmchooser'
+        azureSubscription: 'vmchooser.arm'
         appType: functionApp
         appName: 'vmchooser-prd-func-be'
