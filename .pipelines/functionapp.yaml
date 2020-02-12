@@ -51,7 +51,7 @@ stages:
         azureSubscription: 'vmchooser.arm'
         appType: functionApp
         appName: 'vmchooser-dev-func-be'
-        package: $(System.DefaultWorkingDirectory)/**/*.zip
+        package: $(Pipeline.Workspace)/**/*.zip
 - stage: DeployPrd
   displayName: Deploy to Prd
   jobs:
@@ -66,4 +66,4 @@ stages:
         azureSubscription: 'vmchooser.arm'
         appType: functionApp
         appName: 'vmchooser-prd-func-be'
-        package: $(System.DefaultWorkingDirectory)/**/*.zip
+        package: $(Pipeline.Workspace)/**/*.zip
