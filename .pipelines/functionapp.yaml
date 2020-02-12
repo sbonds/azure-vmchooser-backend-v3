@@ -1,0 +1,65 @@
+name: 3.0.$(Build.BuildId)
+resources:
+  repositories:
+  - repository: vmchooserbackendv3
+    type: github
+    name: vmchooser/azure-vmchooser-backend-v3
+    endpoint: vmchooser
+trigger:
+  batch: true
+  branches:
+    include:
+    - master
+stages:
+- stage: BuildFunctionApp
+  displayName: Build & Push Function App
+  jobs:
+  - job: BuildFunctionApp
+    pool:
+          vmImage: 'VS2017-Win2016'
+    steps:
+    - script: |
+        dotnet restore
+        dotnet build --configuration Release
+    - task: DotNetCoreCLI@2
+      inputs:
+        command: publish
+        arguments: '--configuration Release --output publish_output'
+        projects: '*.csproj'
+        publishWebProjects: false
+        modifyOutputPath: true
+        zipAfterPublish: false
+    - task: ArchiveFiles@2
+      displayName: "Archive files"
+      inputs:
+        rootFolderOrFile: "$(System.DefaultWorkingDirectory)/publish_output"
+        includeRootFolder: false
+        archiveFile: "$(System.DefaultWorkingDirectory)/build$(Build.BuildId).zip"
+    - task: PublishBuildArtifacts@1
+      inputs:
+        PathtoPublish: '$(System.DefaultWorkingDirectory)/build$(Build.BuildId).zip'
+        artifactName: 'vmchooserbackend'
+- stage: DeployDev
+  displayName: Deploy to Dev
+  jobs:
+  - job: DeployDev
+    pool:
+      vmImage: 'ubuntu-latest'
+    steps:
+    - task: AzureFunctionApp@1
+      inputs:
+        azureSubscription: 'vmchooser'
+        appType: functionApp
+        appName: 'vmchooser-dev-func-be'
+- stage: DeployPrd
+  displayName: Deploy to Prd
+  jobs:
+  - job: DeployDev
+    pool:
+      vmImage: 'ubuntu-latest'
+    steps:
+    - task: AzureFunctionApp@1
+      inputs:
+        azureSubscription: 'vmchooser'
+        appType: functionApp
+        appName: 'vmchooser-prd-func-be'

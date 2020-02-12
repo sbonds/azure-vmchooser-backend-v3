@@ -5,11 +5,7 @@ resources:
     type: github
     name: vmchooser/azure-vmchooser-backend-v3
     endpoint: vmchooser
-trigger:
-  batch: true
-  branches:
-    include:
-    - master
+trigger: none
 stages:
 - stage: BuildContainerImage
   displayName: Build & Push Container Image
