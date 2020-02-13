@@ -16,7 +16,7 @@ stages:
   jobs:
   - job: BuildFunctionApp
     pool:
-          vmImage: 'VS2017-Win2016'
+      vmImage: 'VS2017-Win2016'
     steps:
     - script: |
         dotnet restore
@@ -27,43 +27,27 @@ stages:
         arguments: '--configuration Release --output publish_output'
         projects: '*.csproj'
         publishWebProjects: false
-        modifyOutputPath: false
+        modifyOutputPath: true
         zipAfterPublish: false
     - task: ArchiveFiles@2
       displayName: "Archive files"
       inputs:
-        rootFolderOrFile: "$(System.DefaultWorkingDirectory)/publish_output/"
+        rootFolderOrFile: "$(System.DefaultWorkingDirectory)/publish_output/s"
         includeRootFolder: false
         archiveFile: "$(System.DefaultWorkingDirectory)/build$(Build.BuildId).zip"
-    - publish: '$(System.DefaultWorkingDirectory)/build$(Build.BuildId).zip'
-      artifact: vmchooserbackend
-- stage: DeployDev
-  displayName: Deploy to Dev
-  jobs:
-  - job: DeployDev
-    pool:
-      vmImage: 'ubuntu-latest'
-    steps:
-    - download: current
-      artifact: vmchooserbackend
-    - task: AzureFunctionApp@1
+    - task: PublishBuildArtifacts@1
       inputs:
-        azureSubscription: 'vmchooser.arm'
-        appType: functionApp
-        appName: 'vmchooser-dev-func-be'
-        package: $(Pipeline.Workspace)/**/*.zip
-- stage: DeployPrd
-  displayName: Deploy to Prd
-  jobs:
-  - job: DeployDev
-    pool:
-      vmImage: 'ubuntu-latest'
-    steps:
-    - download: current
-      artifact: vmchooserbackend
-    - task: AzureFunctionApp@1
+        PathtoPublish: '$(System.DefaultWorkingDirectory)/build$(Build.BuildId).zip'
+        ArtifactName: 'drop'
+    - task: AzureRmWebAppDeployment@4
       inputs:
+        connectionType: 'AzureRM'
         azureSubscription: 'vmchooser.arm'
-        appType: functionApp
-        appName: 'vmchooser-prd-func-be'
-        package: $(Pipeline.Workspace)/**/*.zip
+        appType: 'functionApp'
+        webAppName: 'vmchooser-dev-func-be'
+    - task: AzureRmWebAppDeployment@4
+      inputs:
+        connectionType: 'AzureRM'
+        azureSubscription: 'vmchooser.arm'
+        appType: 'functionApp'
+        webAppName: 'vmchooser-prd-func-be'
