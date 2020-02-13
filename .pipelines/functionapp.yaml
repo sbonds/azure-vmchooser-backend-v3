@@ -61,6 +61,7 @@ stages:
                 azureSubscription: 'vmchooser.arm'
                 appType: 'functionApp'
                 webAppName: 'vmchooser-dev-func-be'
+                Package: $(Agent.BuildDirectory)/**/*.zip
 - stage: DeployPrd
   displayName: Deploy to Prd
   jobs: 
@@ -83,3 +84,4 @@ stages:
                 azureSubscription: 'vmchooser.arm'
                 appType: 'functionApp'
                 webAppName: 'vmchooser-prd-func-be'
+                Package: $(Agent.BuildDirectory)/**/*.zip
