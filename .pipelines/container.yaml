@@ -98,7 +98,7 @@ stages:
 - stage: DeployHelmChartPrd
   displayName: Deploy to Prd
   jobs: 
-    - deployment: DeployChartDev
+    - deployment: DeployChartPrd
       variables:
       - group: vmchooser
       - group: vmchooserprd

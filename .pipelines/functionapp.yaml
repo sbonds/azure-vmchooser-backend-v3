@@ -38,16 +38,48 @@ stages:
     - task: PublishBuildArtifacts@1
       inputs:
         PathtoPublish: '$(System.DefaultWorkingDirectory)/build$(Build.BuildId).zip'
-        ArtifactName: 'drop'
-    - task: AzureRmWebAppDeployment@4
-      inputs:
-        connectionType: 'AzureRM'
-        azureSubscription: 'vmchooser.arm'
-        appType: 'functionApp'
-        webAppName: 'vmchooser-dev-func-be'
-    - task: AzureRmWebAppDeployment@4
-      inputs:
-        connectionType: 'AzureRM'
-        azureSubscription: 'vmchooser.arm'
-        appType: 'functionApp'
-        webAppName: 'vmchooser-prd-func-be'
+        ArtifactName: 'vmchooserbackend'
+- stage: DeployDev
+  displayName: Deploy to Dev
+  jobs: 
+    - deployment: DeployDev
+      variables:
+      - group: vmchooser
+      - group: vmchooserdev
+      environment: 'vmchooserdev'
+      strategy: 
+        runOnce:
+          deploy:          
+            pool: 
+              vmImage: 'ubuntu-latest'
+            steps:
+            - download: current
+              artifact: vmchooserbackend
+            - task: AzureRmWebAppDeployment@4
+              inputs:
+                connectionType: 'AzureRM'
+                azureSubscription: 'vmchooser.arm'
+                appType: 'functionApp'
+                webAppName: 'vmchooser-dev-func-be'
+- stage: DeployPrd
+  displayName: Deploy to Prd
+  jobs: 
+    - deployment: DeployPrd
+      variables:
+      - group: vmchooser
+      - group: vmchooserdev
+      environment: 'vmchooserprd'
+      strategy: 
+        runOnce:
+          deploy:          
+            pool: 
+              vmImage: 'ubuntu-latest'
+            steps:
+            - download: current
+              artifact: vmchooserbackend
+            - task: AzureRmWebAppDeployment@4
+              inputs:
+                connectionType: 'AzureRM'
+                azureSubscription: 'vmchooser.arm'
+                appType: 'functionApp'
+                webAppName: 'vmchooser-prd-func-be'
